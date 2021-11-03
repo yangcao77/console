@@ -68,7 +68,7 @@ const SamplePlaceholderJSON = `[
         "language": "python",
         "git": {
             "remotes": {
-                "origin": "https://github.com/elsony/devfile-sample-python-basic.git"
+                "origin": "https://github.com/yangcao77/devfile-sample-python-basic.git"
             }
         }
     }

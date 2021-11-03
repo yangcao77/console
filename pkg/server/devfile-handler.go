@@ -80,17 +80,20 @@ func (s *Server) devfileHandler(w http.ResponseWriter, r *http.Request) {
 		Filter: map[string]interface{}{
 			"tool": "console-import",
 		},
+		ComponentOptions: common.ComponentOptions{
+			ComponentType: devfilev1.ImageComponentType,
+		},
 	}
 
-	containerComponents, err := devfileObj.Data.GetDevfileContainerComponents(filterOptions) //For Dev Preview, if there is more than one component container err out
+	imageComponents, err := devfileObj.Data.GetComponents(filterOptions) //For Dev Preview, if there is more than one image component err out
 	if err != nil {
-		errMsg := fmt.Sprintf("Failed to get the container component from devfile with attribute 'tool: console-import': %v", err)
+		errMsg := fmt.Sprintf("Failed to get the image component from devfile with attribute 'tool: console-import': %v", err)
 		klog.Error(errMsg)
 		serverutils.SendResponse(w, http.StatusBadRequest, serverutils.ApiError{Err: errMsg})
 		return
 	}
-	if len(containerComponents) != 1 {
-		errMsg := "Console Devfile Import Dev Preview, supports only one component container with attribute 'tool: console-import'"
+	if len(imageComponents) != 1 {
+		errMsg := fmt.Sprintf("Console Devfile Import Dev Preview, supports only one image component with attribute 'tool: console-import', now only has %v", len(imageComponents))
 		klog.Error(errMsg)
 		serverutils.SendResponse(w, http.StatusBadRequest, serverutils.ApiError{Err: errMsg})
 		return
@@ -112,17 +115,18 @@ func (s *Server) devfileHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	dockerfileRelativePath := devfileObj.Data.GetMetadata().Attributes.GetString("alpha.build-dockerfile", &err)
-	if err != nil {
-		errMsg := fmt.Sprintf("Failed to get the Dockerfile location from devfile metadata attribute 'alpha.build-dockerfile': %v", err)
+	dockerfileRelativePath := imageComponents[0].Image.Dockerfile.Uri
+	if dockerfileRelativePath == "" {
+		errMsg := fmt.Sprintf("Failed to get the Dockerfile location, dockerfile uri is not defined by image component %v", imageComponents[0].Name)
 		klog.Error(errMsg)
 		serverutils.SendResponse(w, http.StatusBadRequest, serverutils.ApiError{Err: errMsg})
 		return
 	}
 
-	dockerRelativeSrcContext := devfileObj.Data.GetMetadata().Attributes.GetString("alpha.build-context", &err)
+
+	dockerRelativeSrcContext := imageComponents[0].Image.Dockerfile.BuildContext
 	if err != nil {
-		errMsg := fmt.Sprintf("Failed to get the Dockerfile location from devfile metadata attribute 'alpha.build-context': %v", err)
+		errMsg := fmt.Sprintf("Failed to get the dockefile context location, dockerfile buildcontext is not defined by image component %v", imageComponents[0].Name)
 		klog.Error(errMsg)
 		serverutils.SendResponse(w, http.StatusBadRequest, serverutils.ApiError{Err: errMsg})
 		return
@@ -135,7 +139,7 @@ func (s *Server) devfileHandler(w http.ResponseWriter, r *http.Request) {
 		BuildResource:  getBuildResource(data, dockerfileRelativePath, dockerContextDir),
 		DeployResource: deploymentResource,
 		Service:        service,
-		Route:          getRoutes(data, containerComponents),
+		Route:          getRoute(data),
 	}
 
 	w.Header().Set("Content-Type", "application/json")
@@ -204,6 +208,14 @@ func getService(devfileObj parser.DevfileObj, filterOptions common.DevfileOption
 		return corev1.Service{}, err
 	}
 
+	svcPort := corev1.ServicePort{
+
+		Name:       "http-8081",
+		Port:       8081,
+		TargetPort: intstr.FromInt(8081),
+	}
+	service.Spec.Ports = append(service.Spec.Ports, svcPort)
+
 	return *service, nil
 }
 
@@ -217,7 +229,7 @@ func getRoutes(data devfileForm, containerComponents []devfilev1.Component) rout
 				continue
 			}
 			secure := false
-			if endpoint.Secure || endpoint.Protocol == "https" || endpoint.Protocol == "wss" {
+			if *endpoint.Secure || endpoint.Protocol == "https" || endpoint.Protocol == "wss" {
 				secure = true
 			}
 			path := "/"
@@ -241,4 +253,19 @@ func getRoutes(data devfileForm, containerComponents []devfilev1.Component) rout
 	}
 
 	return routes[0]
+}
+
+
+func getRoute(data devfileForm) routev1.Route {
+	routeParams := generator.RouteParams{
+			TypeMeta: generator.GetTypeMeta("Route", "route.openshift.io/v1"),
+			RouteSpecParams: generator.RouteSpecParams{
+			ServiceName: data.Name,
+			PortNumber:  intstr.FromInt(8081),
+			Path:        "/",
+			Secure:      false,
+		},
+	}
+
+return  *generator.GetRoute(routeParams)
 }
