@@ -15,7 +15,7 @@ const SamplePlaceholderJSON = `[
         "language": "nodejs",
         "git": {
             "remotes": {
-                "origin": "https://github.com/redhat-developer/devfile-sample.git"
+                "origin": "https://github.com/yangcao77/devfile-sample.git"
             }
         }
     },
@@ -33,7 +33,7 @@ const SamplePlaceholderJSON = `[
         "language": "java",
         "git": {
             "remotes": {
-                "origin": "https://github.com/elsony/devfile-sample-code-with-quarkus.git"
+                "origin": "https://github.com/yangcao77/devfile-sample-code-with-quarkus.git"
             }
         }
     },
@@ -51,7 +51,7 @@ const SamplePlaceholderJSON = `[
         "language": "java",
         "git": {
             "remotes": {
-                "origin": "https://github.com/elsony/devfile-sample-java-springboot-basic.git"
+                "origin": "https://github.com/yangcao77/devfile-sample-java-springboot-basic.git"
             }
         }
     },

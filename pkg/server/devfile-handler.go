@@ -77,9 +77,6 @@ func (s *Server) devfileHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	filterOptions := common.DevfileOptions{
-		Filter: map[string]interface{}{
-			"tool": "console-import",
-		},
 		ComponentOptions: common.ComponentOptions{
 			ComponentType: devfilev1.ImageComponentType,
 		},
@@ -208,6 +205,8 @@ func getService(devfileObj parser.DevfileObj, filterOptions common.DevfileOption
 		return corev1.Service{}, err
 	}
 
+	devfileObj.Data.GetMetadata().Attributes
+
 	svcPort := corev1.ServicePort{
 
 		Name:       "http-8081",
@@ -256,7 +255,8 @@ func getRoutes(data devfileForm, containerComponents []devfilev1.Component) rout
 }
 
 
-func getRoute(data devfileForm) routev1.Route {
+func getRouteForDockerImage(data devfileForm) routev1.Route {
+
 	routeParams := generator.RouteParams{
 			TypeMeta: generator.GetTypeMeta("Route", "route.openshift.io/v1"),
 			RouteSpecParams: generator.RouteSpecParams{
