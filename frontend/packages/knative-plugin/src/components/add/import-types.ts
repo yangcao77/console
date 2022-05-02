@@ -34,6 +34,7 @@ export interface ApplicationData {
   initial: string;
   name: string;
   selectedKey: string;
+  isInContext?: boolean;
 }
 
 export interface EventSourceData {
@@ -58,11 +59,26 @@ export interface EventSourceFormData {
   sink: SinkResourceData;
   data?: EventSourceData;
 }
-
 export interface EventSourceSyncFormData {
   editorType?: string;
   showCanUseYAMLMessage?: boolean;
   formData: EventSourceFormData;
+  yamlData?: string;
+}
+export interface EventSinkFormData {
+  project: ProjectData;
+  application: ApplicationData;
+  name: string;
+  apiVersion: string;
+  type: string;
+  source: SinkResourceData;
+  data?: EventSourceData;
+}
+
+export interface EventSinkSyncFormData {
+  editorType?: string;
+  showCanUseYAMLMessage?: boolean;
+  formData: EventSinkFormData;
   yamlData?: string;
 }
 
@@ -73,7 +89,7 @@ export type YamlFormSyncData<T> = {
   yamlData?: string;
 };
 
-export interface EventSourceMetaData {
+export interface KnEventCatalogMetaData {
   name: string;
   description?: string;
   provider?: string;

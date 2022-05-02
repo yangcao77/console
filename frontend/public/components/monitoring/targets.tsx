@@ -18,7 +18,7 @@ import { RootState } from '../../redux';
 import { RowFunctionArgs, Table, TableData } from '../factory';
 import { FilterToolbar, RowFilter } from '../filter-toolbar';
 import { PROMETHEUS_BASE_PATH } from '../graphs';
-import { SectionHeading, BreadCrumbs } from '../utils/headings';
+import { BreadCrumbs, PageHeading, SectionHeading } from '../utils/headings';
 import { useK8sWatchResource } from '../utils/k8s-watch-hook';
 import { usePoll } from '../utils/poll-hook';
 import { ResourceLink } from '../utils/resource-link';
@@ -103,13 +103,15 @@ const Details = withRouter<DetailsProps>(({ loaded, loadError, match, targets })
       <Helmet>
         <title>{t('public~Target details')}</title>
       </Helmet>
-      <div className="co-m-nav-title co-m-nav-title--detail co-m-nav-title--breadcrumbs">
+      <div className="pf-c-page__main-breadcrumb">
         <BreadCrumbs
           breadcrumbs={[
             { name: t('public~Targets'), path: '/monitoring/targets' },
             { name: t('public~Target details'), path: undefined },
           ]}
         />
+      </div>
+      <div className="co-m-nav-title co-m-nav-title--detail co-m-nav-title--breadcrumbs">
         <h1 className="co-m-pane__heading">
           <div className="co-resource-item">{scrapeUrl}</div>
         </h1>
@@ -273,14 +275,14 @@ const List: React.FC<ListProps> = ({ loaded, loadError, targets }) => {
     },
   ];
 
+  const title = t('public~Metrics targets');
+
   return (
     <>
       <Helmet>
-        <title>{t('public~Metrics targets')}</title>
+        <title>{title}</title>
       </Helmet>
-      <div className="co-m-nav-title">
-        <h1 className="co-m-pane__heading">{t('public~Metrics Targets')}</h1>
-      </div>
+      <PageHeading title={title} />
       <div className="co-m-pane__body">
         {loadError && (
           <Alert

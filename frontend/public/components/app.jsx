@@ -17,7 +17,7 @@ import { getBrandingDetails, Masthead } from './masthead';
 import { ConsoleNotifier } from './console-notifier';
 import { ConnectedNotificationDrawer } from './notification-drawer';
 import { Navigation } from './nav';
-import { history, AsyncComponent, LoadingBox } from './utils';
+import { history, AsyncComponent, LoadingBox, useSafeFetch, usePoll } from './utils';
 import * as UIActions from '../actions/ui';
 import { fetchSwagger, getCachedResources } from '../module/k8s';
 import { receivedResources, startAPIDiscovery } from '../actions/k8s';
@@ -46,17 +46,14 @@ import ToastProvider from '@console/shared/src/components/toast/ToastProvider';
 import { useToast } from '@console/shared/src/components/toast';
 import { useTelemetry } from '@console/shared/src/hooks/useTelemetry';
 import { useDebounceCallback } from '@console/shared/src/hooks/debounce';
-import {
-  useURLPoll,
-  URL_POLL_DEFAULT_DELAY,
-} from '@console/internal/components/utils/url-poll-hook';
+import { URL_POLL_DEFAULT_DELAY } from '@console/internal/components/utils/url-poll-hook';
+import { ThemeProvider } from './ThemeProvider';
 import { init as initI18n } from '../i18n';
+import { Page, SkipToContent, AlertVariant } from '@patternfly/react-core'; // PF4 Imports
 import '../vendor.scss';
 import '../style.scss';
 import '@patternfly/quickstarts/dist/quickstarts.min.css';
-
-// PF4 Imports
-import { Page, SkipToContent, AlertVariant } from '@patternfly/react-core';
+import '@patternfly/patternfly/patternfly-theme-dark.css'; // load dark theme here as MiniCssExtractPlugin ignores load order of sass and dark theme must load after all other css
 
 const breakpointMD = 1200;
 const NOTIFICATION_DRAWER_BREAKPOINT = 1800;
@@ -312,9 +309,20 @@ const PollConsoleUpdates = React.memo(function PollConsoleUpdates() {
   const [consoleChanged, setConsoleChanged] = React.useState(false);
   const [isFetchingPluginEndpoints, setIsFetchingPluginEndpoints] = React.useState(false);
   const [allPluginEndpointsReady, setAllPluginEndpointsReady] = React.useState(false);
-  const [pluginsData, pluginsError] = useURLPoll(
-    `${window.SERVER_FLAGS.basePath}api/check-updates`,
-  );
+
+  const [pluginsData, setPluginsData] = React.useState();
+  const [pluginsError, setPluginsError] = React.useState();
+  const safeFetch = React.useCallback(useSafeFetch(), []);
+  const tick = React.useCallback(() => {
+    safeFetch(`${window.SERVER_FLAGS.basePath}api/check-updates`)
+      .then((response) => {
+        setPluginsData(response);
+        setPluginsError(null);
+      })
+      .catch(setPluginsError);
+  }, [safeFetch]);
+  usePoll(tick, URL_POLL_DEFAULT_DELAY);
+
   const prevPluginsDataRef = React.useRef();
   React.useEffect(() => {
     prevPluginsDataRef.current = pluginsData;
@@ -490,19 +498,21 @@ graphQLReady.onReady(() => {
   render(
     <React.Suspense fallback={<LoadingBox />}>
       <Provider store={store}>
-        <AppInitSDK
-          configurations={{
-            appFetch: appInternalFetch,
-            apiDiscovery: initApiDiscovery,
-            initPlugins,
-          }}
-        >
-          <CaptureTelemetry />
-          <ToastProvider>
-            <PollConsoleUpdates />
-            <AppRouter />
-          </ToastProvider>
-        </AppInitSDK>
+        <ThemeProvider>
+          <AppInitSDK
+            configurations={{
+              appFetch: appInternalFetch,
+              apiDiscovery: initApiDiscovery,
+              initPlugins,
+            }}
+          >
+            <CaptureTelemetry />
+            <ToastProvider>
+              <PollConsoleUpdates />
+              <AppRouter />
+            </ToastProvider>
+          </AppInitSDK>
+        </ThemeProvider>
       </Provider>
     </React.Suspense>,
     document.getElementById('app'),

@@ -6,15 +6,23 @@ import { app } from './app';
 
 export const operatorsPage = {
   navigateToOperatorHubPage: () => {
-    cy.get(operatorsPO.nav.operators).click();
-    cy.get(operatorsPO.nav.operatorHub).click({ force: true });
+    cy.get(operatorsPO.nav.operatorHub).then(($nav) => {
+      if (!$nav.is(':visible')) {
+        cy.get(operatorsPO.nav.operators).click();
+      }
+      cy.get(operatorsPO.nav.operatorHub).click({ force: true });
+    });
     detailsPage.titleShouldContain(pageTitle.OperatorHub);
     cy.get('.skeleton-catalog--grid').should('not.exist');
   },
 
   navigateToInstallOperatorsPage: () => {
-    cy.get(operatorsPO.nav.operators).click();
-    cy.get(operatorsPO.nav.installedOperators).click({ force: true });
+    cy.get(operatorsPO.nav.installedOperators).then(($nav) => {
+      if (!$nav.is(':visible')) {
+        cy.get(operatorsPO.nav.operators).click();
+      }
+      cy.get(operatorsPO.nav.installedOperators).click({ force: true });
+    });
     app.waitForLoad();
     detailsPage.titleShouldContain(pageTitle.InstalledOperators);
   },
@@ -47,6 +55,7 @@ export const operatorsPage = {
   },
 
   searchOperatorInInstallPage: (operatorName: string | operators) => {
+    cy.get('.co-installed-operators').should('be.visible');
     cy.get('body').then(($body) => {
       if ($body.find(operatorsPO.installOperators.noOperatorsDetails).length === 0) {
         cy.get(operatorsPO.installOperators.search)
@@ -146,6 +155,16 @@ export const operatorsPage = {
       case 'Service Binding':
       case operators.ServiceBinding: {
         cy.get(operatorsPO.operatorHub.serviceBinding).click();
+        break;
+      }
+      case 'Crunchy Postgres for Kubernetes':
+      case operators.CrunchyPostgresforKubernetes: {
+        cy.get(operatorsPO.operatorHub.CrunchyPostgresforKubernetes).click();
+        break;
+      }
+      case 'Quay Container Security':
+      case operators.QuayContainerSecurity: {
+        cy.get(operatorsPO.operatorHub.quayContainerSecurity).click();
         break;
       }
       default: {

@@ -71,15 +71,6 @@ form.pf-c-form {
   font-family: var(--pf-global--FontFamily--sans-serif);
 }
 
-.pf-c-breadcrumb {
-  padding-bottom: 12px;
-  padding-top: 25px;
-
-  &--no-padding-top {
-    padding-top: 0;
-  }
-}
-
 .pf-c-button--align-right {
   margin-left: auto !important;
 }
@@ -113,10 +104,6 @@ form.pf-c-form {
 
 .pf-c-button.pf-m-inline {
   text-align: left; // override default .pf-c-button text centering
-}
-
-.pf-c-button.pf-m-link {
-  white-space: normal; // override default .pf-c-button to enable wrapping
 }
 
 .pf-c-button.pf-m-link--align-left {
@@ -165,16 +152,9 @@ form.pf-c-form {
     flex-direction: column;
     height: 100%;
   }
-}
 
-@-webkit-keyframes autofill-success {
-  to {
-    background: var(--pf-c-form-control--success--Background);
-  }
-}
-@-webkit-keyframes autofill-invalid {
-  to {
-    background: var(--pf-c-form-control--invalid--Background);
+  .pf-c-page__header {
+    background-color: var(--pf-global--palette--black-1000);
   }
 }
 
@@ -198,18 +178,6 @@ form.pf-c-form {
   .pf-c-form-control.pf-m-success,
   .pf-c-form-control[aria-invalid='true'] {
     --pf-global--FontSize--md: #{$font-size-base};
-  }
-
-  .pf-c-form-control {
-    &:-webkit-autofill {
-      -webkit-animation-fill-mode: both;
-      &.pf-m-success {
-        -webkit-animation-name: autofill-success;
-      }
-      &[aria-invalid='true'] {
-        -webkit-animation-name: autofill-invalid;
-      }
-    }
   }
 }
 
@@ -273,7 +241,7 @@ form.pf-c-form {
     border-bottom: 0;
   }
   tr:last-child {
-    border-bottom: 1px solid $table-border-color;
+    border-bottom: var(--pf-global--BorderWidth--sm) solid var(--pf-global--BorderColor--300);
   }
 }
 
@@ -313,6 +281,16 @@ ul.pf-c-tree-view__list {
 
 .pfext-quick-start-content {
   font-size: $font-size-base !important;
+}
+
+.odc-topology {
+  .pf-topology-content {
+    background-color: var(--pf-global--BackgroundColor--200);
+  }
+}
+
+.pfext-quick-start-footer {
+  background-color: var(--pf-global--BackgroundColor--100);
 }
 
 // TODO Remove this override when skip to content CSS is figured out.

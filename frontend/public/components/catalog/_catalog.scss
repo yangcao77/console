@@ -22,6 +22,10 @@ $catalog-tile-width: $co-m-catalog-tile-width;
   min-width: 515px; // in order to accommodate filters and tiles at mobile
 }
 
+.co-catalog-item-info {
+  margin-bottom: 20px;
+}
+
 // Prevents our tile text from inheriting the link color
 .co-catalog-tile {
   color: var(--pf-global--Color--100);
@@ -169,13 +173,14 @@ $catalog-tile-width: $co-m-catalog-tile-width;
   }
 
   &__input {
-    display: inline-flex !important;
     margin: 0 $pf-global-gutter $pf-global-gutter--md;
+    @media (max-width: $pf-global--breakpoint--md) {
+      max-width: 165px;
+    }
     @media (min-width: $pf-global--breakpoint--xl) {
       margin-left: $pf-global-gutter--md;
       margin-right: $pf-global-gutter--md;
     }
-    width: auto !important;
   }
 
   &__sort {
@@ -304,6 +309,10 @@ $catalog-tile-width: $co-m-catalog-tile-width;
   &__tabs {
     flex: 0 0 220px;
     margin: 0 $pf-global-gutter 0 0;
+  }
+
+  &__searchfilter {
+    display: inline-flex;
   }
 }
 

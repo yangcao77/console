@@ -33,6 +33,8 @@ export enum operators {
   RedHatCodereadyWorkspaces = 'Red Hat CodeReady Workspaces',
   GitopsPrimer = 'gitops-primer',
   ServiceBinding = 'Service Binding Operator',
+  CrunchyPostgresforKubernetes = 'Crunchy Postgres for Kubernetes',
+  QuayContainerSecurity = 'Quay Container Security',
 }
 
 export enum authenticationType {

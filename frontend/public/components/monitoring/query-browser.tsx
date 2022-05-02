@@ -35,7 +35,11 @@ import { VictoryPortal } from 'victory-core';
 import { PrometheusEndpoint } from '@console/dynamic-plugin-sdk/src/api/internal-types';
 import { withFallback } from '@console/shared/src/components/error/error-boundary';
 
-import { queryBrowserDeleteAllSeries, queryBrowserPatchQuery } from '../../actions/observe';
+import {
+  queryBrowserDeleteAllSeries,
+  queryBrowserPatchQuery,
+  queryBrowserSetTimespan,
+} from '../../actions/observe';
 import { RootState } from '../../redux';
 import { PrometheusLabels, PrometheusResponse, PrometheusResult, PrometheusValue } from '../graphs';
 import { GraphEmpty } from '../graphs/graph-empty';
@@ -455,7 +459,7 @@ const Graph: React.FC<GraphProps> = React.memo(
             itemsPerRow={4}
             orientation="vertical"
             style={{
-              labels: { fontSize: 11 },
+              labels: { fontSize: 11, fill: 'var(--pf-global--Color--100)' },
             }}
             symbolSpacer={4}
           />
@@ -642,6 +646,9 @@ const QueryBrowser_: React.FC<QueryBrowserProps> = ({
   const tickInterval = useSelector(
     ({ observe }: RootState) => pollInterval ?? observe.getIn(['queryBrowser', 'pollInterval']),
   );
+  const lastRequestTime = useSelector(({ observe }: RootState) =>
+    observe.getIn(['queryBrowser', 'lastRequestTime']),
+  );
 
   const dispatch = useDispatch();
 
@@ -788,7 +795,17 @@ const QueryBrowser_: React.FC<QueryBrowserProps> = ({
   }
 
   const queriesKey = _.reject(queries, _.isEmpty).join();
-  usePoll(tick, delay, endTime, filterLabels, namespace, queriesKey, samples, span);
+  usePoll(
+    tick,
+    delay,
+    endTime,
+    filterLabels,
+    namespace,
+    queriesKey,
+    samples,
+    span,
+    lastRequestTime,
+  );
 
   React.useLayoutEffect(() => setUpdating(true), [endTime, namespace, queriesKey, samples, span]);
 
@@ -797,9 +814,10 @@ const QueryBrowser_: React.FC<QueryBrowserProps> = ({
       setGraphData(null);
       setXDomain(undefined);
       setSpan(newSpan);
+      dispatch(queryBrowserSetTimespan(newSpan));
       setSamples(defaultSamples || getMaxSamplesForSpan(newSpan));
     },
-    [defaultSamples],
+    [defaultSamples, dispatch],
   );
 
   const isRangeVector = _.get(error, 'json.error', '').match(

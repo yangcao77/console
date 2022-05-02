@@ -585,3 +585,13 @@ export type SelfSubjectAccessReviewKind = {
     evaluationError?: string;
   };
 };
+
+export type ResourceYAMLEditorProps = {
+  initialResource: string | { [key: string]: any };
+  header?: string;
+  onSave?: (content: string) => void;
+};
+
+export type ResourceEventStreamProps = {
+  resource: K8sResourceCommon;
+};

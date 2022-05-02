@@ -8,7 +8,6 @@ import {
   AlertItemProps,
   HealthItemProps,
   ResourceInventoryItemProps,
-  DetailItemProps,
   DetailsBodyProps,
   UtilizationItemProps,
   UtilizationBodyProps,
@@ -38,8 +37,6 @@ export const HealthBody: React.FC = require('@console/shared/src/components/dash
   .default;
 export const ResourceInventoryItem: React.FC<ResourceInventoryItemProps> = require('@console/shared/src/components/dashboard/inventory-card/InventoryItem')
   .ResourceInventoryItem;
-export const DetailItem: React.FC<DetailItemProps> = require('@console/shared/src/components/dashboard/details-card/DetailItem')
-  .default;
 export const DetailsBody: React.FC<DetailsBodyProps> = require('@console/shared/src/components/dashboard/details-card/DetailsBody')
   .default;
 export const UtilizationItem: React.FC<UtilizationItemProps> = require('@console/shared/src/components/dashboard/utilization-card/UtilizationItem')
@@ -59,3 +56,4 @@ export const usePrometheusPoll: UsePrometheusPoll = require('@console/internal/c
   .usePrometheusPoll;
 export const useActiveNamespace: UseActiveNamespace = require('@console/shared/src/hooks/useActiveNamespace')
   .useActiveNamespace;
+export const ServicesList = require('@console/internal/components/service').ServicesList;

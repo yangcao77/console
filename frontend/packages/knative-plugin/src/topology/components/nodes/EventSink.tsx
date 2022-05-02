@@ -17,6 +17,9 @@ import {
   AnchorEnd,
 } from '@patternfly/react-topology';
 import * as classNames from 'classnames';
+import { DeploymentModel } from '@console/internal/models';
+import { referenceForModel, referenceFor } from '@console/internal/module/k8s';
+import { usePodsWatcher } from '@console/shared';
 import {
   NodeShadows,
   NODE_SHADOW_FILTER_ID_HOVER,
@@ -30,6 +33,7 @@ import {
   getFilterById,
   SHOW_LABELS_FILTER_ID,
 } from '@console/topology/src/filters';
+import { KafkaSinkModel } from '../../../models';
 import { getEventSourceIcon } from '../../../utils/get-knative-icon';
 import { usePodsForRevisions } from '../../../utils/usePodsForRevisions';
 import { TYPE_EVENT_SINK_LINK, TYPE_KAFKA_CONNECTION_LINK } from '../../const';
@@ -74,10 +78,27 @@ const EventSink: React.FC<EventSinkProps> = ({
   const isKafkaConnectionLinkPresent =
     element.getSourceEdges()?.filter((edge: Edge) => edge.getType() === TYPE_KAFKA_CONNECTION_LINK)
       .length > 0;
-  const revisionIds = resources.revisions?.map((revision) => revision.metadata.uid);
+  const { revisions, associatedDeployment = {} } = resources;
+  const revisionIds = revisions?.map((revision) => revision.metadata.uid);
   const { loaded, loadError, pods } = usePodsForRevisions(revisionIds, resource.metadata.namespace);
+
+  const {
+    podData: podsDeployment,
+    loadError: loadErrorDeployment,
+    loaded: loadedDeployment,
+  } = usePodsWatcher(
+    associatedDeployment,
+    associatedDeployment.kind ?? DeploymentModel.kind,
+    associatedDeployment.metadata?.namespace || resource.metadata?.namespace,
+  );
+
+  const isKafkaSink = referenceFor(resource) === referenceForModel(KafkaSinkModel);
+
   const donutStatus = React.useMemo(() => {
-    if (loaded && !loadError) {
+    if (!revisionIds && loadedDeployment && !loadErrorDeployment) {
+      return podsDeployment;
+    }
+    if (revisionIds && loaded && !loadError) {
       const [current, previous] = pods;
       const isRollingOut = !!current && !!previous;
       return {
@@ -89,7 +110,16 @@ const EventSink: React.FC<EventSinkProps> = ({
       };
     }
     return null;
-  }, [loaded, loadError, pods, resource]);
+  }, [
+    revisionIds,
+    loadedDeployment,
+    loadErrorDeployment,
+    loaded,
+    loadError,
+    podsDeployment,
+    pods,
+    resource,
+  ]);
 
   React.useLayoutEffect(() => {
     if (!isKafkaConnectionLinkPresent) {
@@ -125,7 +155,9 @@ const EventSink: React.FC<EventSinkProps> = ({
         points={`${width / 2}, ${(height - size) / 2} ${width - (width - size) / 2},${height /
           2} ${width / 2},${height - (height - size) / 2} ${(width - size) / 2},${height / 2}`}
       />
-      {donutStatus && <PodSet size={size * 0.75} x={width / 2} y={height / 2} data={donutStatus} />}
+      {donutStatus && !isKafkaSink && (
+        <PodSet size={size * 0.75} x={width / 2} y={height / 2} data={donutStatus} />
+      )}
       <image
         x={width * 0.33}
         y={height * 0.33}

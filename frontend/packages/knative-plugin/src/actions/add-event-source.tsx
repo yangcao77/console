@@ -34,6 +34,6 @@ export const AddEventSourceAction = (
       href: `${pageUrl}?${params.toString()}`,
     },
     path,
-    insertAfter: 'upload-jar',
+    insertAfter: 'event-sink-add',
   };
 };

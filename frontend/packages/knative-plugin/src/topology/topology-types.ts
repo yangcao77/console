@@ -12,6 +12,7 @@ export enum NodeType {
   SinkUri = 'sink-uri',
   EventSourceKafka = 'event-source-kafka',
   Kafka = 'knative-kafka',
+  KafkaSink = 'kafka-sink',
 }
 
 export enum EdgeType {
@@ -59,10 +60,6 @@ export type KnativeServiceOverviewItem = OverviewItem &
     previous?: PodControllerOverviewItem;
     isRollingOut?: boolean;
   };
-
-export type KnativeDeploymentOverviewItem = OverviewItem & {
-  associatedDeployment: K8sResourceKind;
-};
 
 export interface KnativeTopologyDataObject<O extends OverviewItem, D = {}>
   extends TopologyDataObject<D> {

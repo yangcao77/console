@@ -187,6 +187,19 @@
     }
   },
   {
+    "type": "console.page/resource/tab",
+    "properties": {
+      "model": {
+        "group": "project.openshift.io",
+        "version": "v1",
+        "kind": "Project"
+      },
+      "name": "Demo Plugin",
+      "href": "/demo-plugin",
+      "component": { "$codeRef": "projectTabContent" }
+    }
+  },
+  {
     "type": "console.page/route",
     "properties": {
       "path": "/test-utility-consumer",
@@ -282,6 +295,20 @@
       "title": "%plugin__console-demo-plugin~Bar item%",
       "getUtilizationQueries": { "$codeRef": "clusterOverview.getUtilizationQueries" },
       "humanize": { "$codeRef": "clusterOverview.humanize" }
+    }
+  },
+  {
+    "type": "console.page/route",
+    "properties": {
+      "path": "/test-editor",
+      "component": { "$codeRef": "yamlEditor.default" }
+    }
+  },
+  {
+    "type": "console.page/route",
+    "properties": {
+      "path": "/test-events",
+      "component": { "$codeRef": "events.default" }
     }
   }
 ]

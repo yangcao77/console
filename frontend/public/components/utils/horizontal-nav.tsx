@@ -35,7 +35,7 @@ import {
 } from '@console/dynamic-plugin-sdk/src/extensions/console-types';
 import { useExtensions, HorizontalNavTab, isHorizontalNavTab } from '@console/plugin-sdk/src';
 
-const editYamlComponent = (props) => (
+export const editYamlComponent = (props) => (
   <AsyncComponent loader={() => import('../edit-yaml').then((c) => c.EditYAML)} obj={props.obj} />
 );
 export const viewYamlComponent = (props) => (
@@ -130,24 +130,6 @@ export const navFactory: NavFactory = {
     href: 'environment',
     // t('public~Environment')
     nameKey: 'public~Environment',
-    component,
-  }),
-  clusterServiceClasses: (component) => ({
-    href: 'serviceclasses',
-    // t('public~ServiceClasses')
-    nameKey: 'public~ServiceClasses',
-    component,
-  }),
-  clusterServicePlans: (component) => ({
-    href: 'serviceplans',
-    // t('public~ServicePlans')
-    nameKey: 'public~ServicePlans',
-    component,
-  }),
-  serviceBindings: (component) => ({
-    href: 'servicebindings',
-    // t('public~ServiceBindings')
-    nameKey: 'public~ServiceBindings',
     component,
   }),
   clusterOperators: (component) => ({

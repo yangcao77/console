@@ -5,6 +5,7 @@ import * as semver from 'semver';
 import { Helmet } from 'react-helmet';
 import {
   Alert,
+  AlertActionLink,
   Button,
   Flex,
   FlexItem,
@@ -13,19 +14,28 @@ import {
   Progress,
   ProgressSize,
   ProgressVariant,
+  Text,
+  TextContent,
+  TextVariants,
   Tooltip,
 } from '@patternfly/react-core';
 import { Link } from 'react-router-dom';
 import { HashLink } from 'react-router-hash-link';
 import { useTranslation } from 'react-i18next';
 
-import { AddCircleOIcon, PencilAltIcon, SyncAltIcon } from '@patternfly/react-icons';
+import {
+  AddCircleOIcon,
+  PauseCircleIcon,
+  PencilAltIcon,
+  SyncAltIcon,
+} from '@patternfly/react-icons';
 import { removeQueryArgument } from '@console/internal/components/utils/router';
 import { SyncMarkdownView } from '@console/internal/components/markdown-view';
 import {
   ClusterServiceVersionKind,
   ClusterServiceVersionModel,
 } from '@console/operator-lifecycle-manager';
+import { WatchK8sResource } from '@console/dynamic-plugin-sdk';
 
 import { ClusterOperatorPage } from './cluster-operator';
 import {
@@ -40,15 +50,16 @@ import {
   ClusterOperatorModel,
   ClusterVersionModel,
   MachineConfigPoolModel,
+  MachineConfigModel,
   NodeModel,
 } from '../../models';
 import {
+  clusterIsUpToDateOrUpdateAvailable,
   ClusterOperator,
   ClusterUpdateStatus,
   ClusterVersionConditionType,
   ClusterVersionKind,
   clusterVersionReference,
-  getAvailableClusterUpdates,
   getClusterID,
   getClusterOperatorVersion,
   getClusterUpdateStatus,
@@ -57,6 +68,7 @@ import {
   getCurrentVersion,
   getDesiredClusterVersion,
   getLastCompletedUpdate,
+  getMCPsToPausePromises,
   getNewerClusterVersionChannel,
   getNewerMinorVersionUpdate,
   getNotUpgradeableResources,
@@ -64,14 +76,20 @@ import {
   getReleaseNotesLink,
   getSimilarClusterVersionChannels,
   getSortedUpdates,
+  isMCPMaster,
+  isMCPPaused,
+  isMCPWorker,
   isMinorVersionNewer,
   k8sPatch,
   K8sResourceConditionStatus,
   K8sResourceKind,
   MachineConfigPoolConditionType,
   MachineConfigPoolKind,
+  NodeTypeNames,
+  NodeTypes,
   referenceForModel,
   showReleaseNotes,
+  sortMCPsByCreationTimestamp,
   splitClusterVersionChannel,
   UpdateHistory,
 } from '../../module/k8s';
@@ -84,11 +102,13 @@ import {
   HorizontalNav,
   isUpstream,
   openshiftHelpBase,
+  PageHeading,
   ReleaseNotesLink,
   ResourceLink,
   resourcePathFromModel,
   SectionHeading,
   Timestamp,
+  togglePaused,
   truncateMiddle,
   UpstreamConfigDetailsItem,
   useAccessReview,
@@ -99,13 +119,14 @@ import {
   BlueInfoCircleIcon,
   GreenCheckCircleIcon,
   RedExclamationCircleIcon,
+  useCanClusterUpgrade,
   YellowExclamationTriangleIcon,
 } from '@console/shared';
-import { WatchK8sResource } from '@console/dynamic-plugin-sdk';
 import { useFlag } from '@console/shared/src/hooks/flag';
 import { FLAGS } from '@console/shared/src/constants';
 
 import { ServiceLevel, useServiceLevelTitle, ServiceLevelText } from '../utils/service-level';
+import { hasAvailableUpdates } from '../../module/k8s/cluster-settings';
 
 const cancelUpdate = (cv: ClusterVersionKind) => {
   k8sPatch(ClusterVersionModel, cv, [{ path: '/spec/desiredUpdate', op: 'remove' }]).catch(
@@ -153,13 +174,17 @@ const getUpdatedOperatorsCount = (
   );
 };
 
+const getReleaseImageVersion = (obj: K8sResourceKind): string => {
+  return obj?.metadata?.annotations?.['machineconfiguration.openshift.io/release-image-version'];
+};
+
 const calculatePercentage = (numerator: number, denominator: number): number =>
   Math.round((numerator / denominator) * 100);
 
-export const CurrentChannel: React.FC<CurrentChannelProps> = ({ cv, clusterVersionIsEditable }) => {
+export const CurrentChannel: React.FC<CurrentChannelProps> = ({ cv, canUpgrade }) => {
   const { t } = useTranslation();
   const label = cv.spec.channel || t('public~Not configured');
-  return clusterVersionIsEditable ? (
+  return canUpgrade ? (
     <Button
       type="button"
       isInline
@@ -320,7 +345,7 @@ export const CurrentVersion: React.FC<CurrentVersionProps> = ({ cv }) => {
   const status = getClusterUpdateStatus(cv);
   const { t } = useTranslation();
 
-  if (status === ClusterUpdateStatus.UpToDate || status === ClusterUpdateStatus.UpdatesAvailable) {
+  if (clusterIsUpToDateOrUpdateAvailable(status)) {
     return desiredVersion ? (
       <>
         <div>
@@ -352,16 +377,23 @@ export const CurrentVersion: React.FC<CurrentVersionProps> = ({ cv }) => {
   );
 };
 
-export const UpdateLink: React.FC<CurrentVersionProps> = ({ cv, clusterVersionIsEditable }) => {
+export const UpdateLink: React.FC<CurrentVersionProps> = ({ cv, canUpgrade }) => {
+  // assume if 'worker' is editable, others are too
+  const workerMachineConfigPoolIsEditable = useAccessReview({
+    group: MachineConfigPoolModel.apiGroup,
+    resource: MachineConfigPoolModel.plural,
+    verb: 'patch',
+    name: NodeTypes.worker,
+  });
   const status = getClusterUpdateStatus(cv);
-  const updatesAvailable = !_.isEmpty(getAvailableClusterUpdates(cv));
   const { t } = useTranslation();
-  return updatesAvailable &&
+  return canUpgrade &&
+    hasAvailableUpdates(cv) &&
     (status === ClusterUpdateStatus.ErrorRetrieving ||
       status === ClusterUpdateStatus.Failing ||
       status === ClusterUpdateStatus.UpdatesAvailable ||
       status === ClusterUpdateStatus.Updating) &&
-    clusterVersionIsEditable ? (
+    workerMachineConfigPoolIsEditable ? (
     <div className="co-cluster-settings__details">
       <Button
         variant="primary"
@@ -380,7 +412,7 @@ export const CurrentVersionHeader: React.FC<CurrentVersionProps> = ({ cv }) => {
   const { t } = useTranslation();
   return (
     <>
-      {status === ClusterUpdateStatus.UpToDate || status === ClusterUpdateStatus.UpdatesAvailable
+      {clusterIsUpToDateOrUpdateAvailable(status)
         ? t('public~Current version')
         : t('public~Last completed version')}
     </>
@@ -389,8 +421,8 @@ export const CurrentVersionHeader: React.FC<CurrentVersionProps> = ({ cv }) => {
 
 export const ChannelDocLink: React.FC<{}> = () => {
   const upgradeLink = isUpstream()
-    ? `${openshiftHelpBase}updating/updating-cluster-between-minor.html#understanding-upgrade-channels_updating-cluster-between-minor`
-    : `${openshiftHelpBase}html/updating_clusters/updating-cluster-between-minor#understanding-upgrade-channels_updating-cluster-between-minor`;
+    ? `${openshiftHelpBase}updating/understanding-upgrade-channels-release.html#understanding-upgrade-channels_understanding-upgrade-channels-releases`
+    : `${openshiftHelpBase}html/updating_clusters/understanding-upgrade-channels-releases#understanding-upgrade-channels_understanding-upgrade-channels-releases`;
   const { t } = useTranslation();
   return (
     <ExternalLink
@@ -406,12 +438,16 @@ const ChannelHeader: React.FC<{}> = () => {
     <>
       {t('public~Channel')}
       <FieldLevelHelp>
-        <p>
-          {t(
-            'public~Channels help to control the pace of updates and recommend the appropriate release versions. Update channels are tied to a minor version of OpenShift Container Platform, for example 4.5.',
-          )}
-        </p>
-        <ChannelDocLink />
+        <TextContent>
+          <Text component={TextVariants.p}>
+            {t(
+              'public~Channels help to control the pace of updates and recommend the appropriate release versions. Update channels are tied to a minor version of OpenShift Container Platform, for example 4.5.',
+            )}
+          </Text>
+          <Text component={TextVariants.p}>
+            <ChannelDocLink />
+          </Text>
+        </TextContent>
       </FieldLevelHelp>
     </>
   );
@@ -574,6 +610,19 @@ export const NodesUpdatesGroup: React.FC<NodesUpdatesGroupProps> = ({
       name: 'machine-config',
     },
   );
+  const [renderedConfig, renderedConfigLoaded] = useK8sWatchResource<K8sResourceKind>({
+    kind: referenceForModel(MachineConfigModel),
+    name: machineConfigPool?.spec?.configuration?.name,
+  });
+  const machineConfigPoolIsEditable = useAccessReview({
+    group: MachineConfigPoolModel.apiGroup,
+    resource: MachineConfigPoolModel.plural,
+    verb: 'patch',
+    name,
+  });
+  const isMaster = isMCPMaster(machineConfigPool);
+  const isPaused = isMCPPaused(machineConfigPool);
+  const renderedConfigIsUpdated = getReleaseImageVersion(renderedConfig) === desiredVersion;
   const MCOIsUpdated = getClusterOperatorVersion(machineConfigOperator) === desiredVersion;
   const MCPisUpdated = machineConfigPool?.status?.conditions?.some(
     (c) => c.type === 'Updated' && c.status === K8sResourceConditionStatus.True,
@@ -582,26 +631,30 @@ export const NodesUpdatesGroup: React.FC<NodesUpdatesGroupProps> = ({
   const MCPUpdatingTime = getUpdatingTimeForMCP(machineConfigPool);
   const totalMCPNodes = machineConfigPool?.status?.machineCount || 0;
   const updatedMCPNodes =
-    updatedMachineCountReady || MCPUpdatingTime > updateStartedTime
+    updatedMachineCountReady || (MCPUpdatingTime > updateStartedTime && renderedConfigIsUpdated)
       ? machineConfigPool?.status?.updatedMachineCount
       : 0;
   const percentMCPNodes = calculatePercentage(updatedMCPNodes, totalMCPNodes);
+  const isUpdated = percentMCPNodes === 100;
   const { t } = useTranslation();
-  return hideIfComplete && percentMCPNodes === 100
+  return hideIfComplete && isUpdated
     ? null
-    : machineConfigOperatorLoaded && (
+    : machineConfigOperatorLoaded && renderedConfigLoaded && (
         <UpdatesGroup divided={divided}>
           <UpdatesType>
-            <Link to={`/k8s/cluster/nodes?rowFilter-node-role=${machineConfigPool.metadata.name}`}>
-              {t('public~{{name}} Nodes', { name })}
+            <Link
+              to={`/k8s/cluster/nodes?rowFilter-node-role=${machineConfigPool?.metadata?.name}`}
+            >
+              {`${name} ${NodeModel.labelPlural}`}
             </Link>
-            {name !== 'Master' && (
+            {!isMaster && (
               <FieldLevelHelp>
                 {t(
-                  'public~{{name}} {{resource}} may continue to update after the update of Master {{resource}} and {{resource2}} are complete.',
+                  'public~{{name}} {{resource}} may continue to update after the update of {{master}} {{resource}} and {{resource2}} are complete.',
                   {
                     name,
                     resource: NodeModel.labelPlural,
+                    master: NodeTypeNames.Master,
                     resource2: ClusterOperatorModel.labelPlural,
                   },
                 )}
@@ -609,16 +662,38 @@ export const NodesUpdatesGroup: React.FC<NodesUpdatesGroupProps> = ({
             )}
           </UpdatesType>
           <UpdatesBar>
-            <Progress
-              title={t('public~{{updatedMCPNodes}} of {{totalMCPNodes}}', {
-                updatedMCPNodes,
-                totalMCPNodes,
-              })}
-              value={!_.isNaN(percentMCPNodes) ? percentMCPNodes : null}
-              size={ProgressSize.sm}
-              variant={percentMCPNodes === 100 ? ProgressVariant.success : null}
-            />
+            {!isMaster && isPaused && !isUpdated ? (
+              <p>
+                <PauseCircleIcon />{' '}
+                {/* TODO:  change second sentence to 'Must resume before MM/DD/YY.'
+                once https://issues.redhat.com/browse/MCO-77 is complete */}
+                {t('public~Update is paused. Resume update as soon as possible.')}
+              </p>
+            ) : (
+              <Progress
+                title={t('public~{{updatedMCPNodes}} of {{totalMCPNodes}}', {
+                  updatedMCPNodes,
+                  totalMCPNodes,
+                })}
+                value={!_.isNaN(percentMCPNodes) ? percentMCPNodes : null}
+                size={ProgressSize.sm}
+                variant={percentMCPNodes === 100 ? ProgressVariant.success : null}
+              />
+            )}
           </UpdatesBar>
+          {!isMaster && !isUpdated && machineConfigPoolIsEditable && (
+            <Button
+              variant="secondary"
+              className={isPaused ? 'pf-u-mt-sm' : 'pf-u-mt-md'}
+              onClick={() =>
+                togglePaused(MachineConfigPoolModel, machineConfigPool).catch((err) =>
+                  errorModal({ error: err.message }),
+                )
+              }
+            >
+              {isPaused ? t('public~Resume update') : t('public~Pause update')}
+            </Button>
+          )}
         </UpdatesGroup>
       );
 };
@@ -630,8 +705,8 @@ const OtherNodes: React.FC<OtherNodesProps> = ({
   updateStartedTime,
 }) => {
   const otherNodes = machineConfigPools
-    .filter((mcp) => mcp.metadata.name !== 'master' && mcp.metadata.name !== 'worker')
-    .sort((a, b) => a.metadata.creationTimestamp.localeCompare(b.metadata.creationTimestamp));
+    .filter((mcp) => !isMCPMaster(mcp) && !isMCPWorker(mcp))
+    .sort(sortMCPsByCreationTimestamp);
   return (
     <>
       {otherNodes.map((mcp) => {
@@ -764,7 +839,7 @@ export const UpdateInProgress: React.FC<UpdateInProgressProps> = ({
   const totalOperatorsCount = clusterOperators?.length || 0;
   const updatedOperatorsCount = getUpdatedOperatorsCount(clusterOperators, desiredVersion);
   const percentOperators = calculatePercentage(updatedOperatorsCount, totalOperatorsCount);
-  const masterMachinePoolConfig = getMCPByName(machineConfigPools, 'master');
+  const masterMachinePoolConfig = getMCPByName(machineConfigPools, NodeTypes.master);
   const { t } = useTranslation();
 
   return (
@@ -789,7 +864,7 @@ export const UpdateInProgress: React.FC<UpdateInProgressProps> = ({
         <NodesUpdatesGroup
           desiredVersion={desiredVersion}
           machineConfigPool={masterMachinePoolConfig}
-          name="Master"
+          name={NodeTypeNames.Master}
           updateStartedTime={updateStartedTime}
         />
       )}
@@ -798,7 +873,7 @@ export const UpdateInProgress: React.FC<UpdateInProgressProps> = ({
           desiredVersion={desiredVersion}
           divided
           machineConfigPool={workerMachineConfigPool}
-          name="Worker"
+          name={NodeTypeNames.Worker}
           updateStartedTime={updateStartedTime}
         />
       )}
@@ -877,6 +952,92 @@ export const ClusterNotUpgradeableAlert: React.FC<ClusterNotUpgradeableAlertProp
   );
 };
 
+export const ClusterSettingsAlerts: React.FC<ClusterSettingsAlertsProps> = ({
+  canUpgrade,
+  cv,
+  machineConfigPools,
+  status,
+}) => {
+  const { t } = useTranslation();
+  // assume if 'worker' is editable, others are too
+  const workerMachineConfigPoolIsEditable = useAccessReview({
+    group: MachineConfigPoolModel.apiGroup,
+    resource: MachineConfigPoolModel.plural,
+    verb: 'patch',
+    name: NodeTypes.worker,
+  });
+  const channel = cv.spec.channel;
+  const pausedMCPs = machineConfigPools
+    .filter((mcp) => !isMCPMaster(mcp))
+    .filter((mcp) => isMCPPaused(mcp));
+  if (!canUpgrade) {
+    return (
+      <Alert
+        variant="info"
+        isInline
+        title={t('public~Control plane is hosted.')}
+        className="co-alert"
+      />
+    );
+  }
+  return (
+    <>
+      {!channel && (
+        <Alert
+          variant="info"
+          isInline
+          title={t(
+            'public~This cluster is not currently requesting update notifications. To request update recommendations, configure a channel.',
+          )}
+          className="co-alert"
+        />
+      )}
+      {channel && status === ClusterUpdateStatus.ErrorRetrieving && (
+        <Alert
+          variant="danger"
+          isInline
+          title={t(
+            'public~Version {{version}} not found in channel {{channel}}. To request update recommendations, configure a channel that supports your version.',
+            {
+              version: getLastCompletedUpdate(cv),
+              channel,
+            },
+          )}
+          className="co-alert"
+        />
+      )}
+      {!!getConditionUpgradeableFalse(cv) && <ClusterNotUpgradeableAlert cv={cv} />}
+      {clusterIsUpToDateOrUpdateAvailable(status) && pausedMCPs.length > 0 && (
+        <Alert
+          isInline
+          title={t('public~{{resource}} updates are paused.', {
+            resource: NodeModel.label,
+          })}
+          customIcon={<PauseCircleIcon />}
+          actionLinks={
+            workerMachineConfigPoolIsEditable && (
+              <AlertActionLink
+                onClick={() => Promise.all(getMCPsToPausePromises(pausedMCPs, false))}
+              >
+                {t('public~Resume all updates')}
+              </AlertActionLink>
+            )
+          }
+          className="co-alert"
+          data-test-id="cluster-settings-alerts-paused-nodes"
+        >
+          <p>
+            {t(
+              'public~You can update your cluster, but make sure to resume your {{resource}} updates quickly to avoid failures.',
+              { resource: NodeModel.label },
+            )}
+          </p>
+        </Alert>
+      )}
+    </>
+  );
+};
+
 export const ClusterVersionDetailsTable: React.FC<ClusterVersionDetailsTableProps> = ({
   obj: cv,
   autoscalers,
@@ -888,19 +1049,13 @@ export const ClusterVersionDetailsTable: React.FC<ClusterVersionDetailsTableProp
   const imageParts = desiredImage.split('@');
   const releaseNotes = showReleaseNotes();
   const status = getClusterUpdateStatus(cv);
-  const clusterVersionIsEditable =
-    useAccessReview({
-      group: ClusterVersionModel.apiGroup,
-      resource: ClusterVersionModel.plural,
-      verb: 'patch',
-      name: cv.metadata.name,
-    }) && window.SERVER_FLAGS.branding !== 'dedicated';
+  const canUpgrade = useCanClusterUpgrade();
   const [machineConfigPools] = useK8sWatchResource<MachineConfigPoolKind[]>(
     MachineConfigPoolsResource,
   );
   const desiredVersion = getDesiredClusterVersion(cv);
   const updateStartedTime = getStartedTimeForCVDesiredVersion(cv, desiredVersion);
-  const workerMachineConfigPool = getMCPByName(machineConfigPools, 'worker');
+  const workerMachineConfigPool = getMCPByName(machineConfigPools, NodeTypes.worker);
   if (new URLSearchParams(window.location.search).has('showVersions')) {
     clusterUpdateModal({ cv })
       .then(() => removeQueryArgument('showVersions'))
@@ -916,31 +1071,12 @@ export const ClusterVersionDetailsTable: React.FC<ClusterVersionDetailsTableProp
     <>
       <div className="co-m-pane__body">
         <div className="co-m-pane__body-group">
-          {!cv.spec.channel && (
-            <Alert
-              variant="info"
-              isInline
-              title={t(
-                'public~This cluster is not currently requesting update notifications. To request update recommendations, configure a channel.',
-              )}
-              className="co-alert"
-            />
-          )}
-          {cv.spec.channel && status === ClusterUpdateStatus.ErrorRetrieving && (
-            <Alert
-              variant="danger"
-              isInline
-              title={t(
-                'public~Version {{version}} not found in channel {{channel}}. To request update recommendations, configure a channel that supports your version.',
-                {
-                  version: getLastCompletedUpdate(cv),
-                  channel: cv.spec.channel,
-                },
-              )}
-              className="co-alert"
-            />
-          )}
-          {!!getConditionUpgradeableFalse(cv) && <ClusterNotUpgradeableAlert cv={cv} />}
+          <ClusterSettingsAlerts
+            canUpgrade={canUpgrade}
+            cv={cv}
+            machineConfigPools={machineConfigPools}
+            status={status}
+          />
           <div className="co-cluster-settings">
             <div className="co-cluster-settings__row">
               <div className="co-cluster-settings__section co-cluster-settings__section--current">
@@ -967,17 +1103,13 @@ export const ClusterVersionDetailsTable: React.FC<ClusterVersionDetailsTableProp
                         <ChannelHeader />
                       </dt>
                       <dd>
-                        <CurrentChannel
-                          cv={cv}
-                          clusterVersionIsEditable={clusterVersionIsEditable}
-                        />
+                        <CurrentChannel cv={cv} canUpgrade={canUpgrade} />
                       </dd>
                     </dl>
-                    <UpdateLink cv={cv} clusterVersionIsEditable={clusterVersionIsEditable} />
+                    <UpdateLink cv={cv} canUpgrade={canUpgrade} />
                   </div>
                 </div>
-                {(status === ClusterUpdateStatus.UpToDate ||
-                  status === ClusterUpdateStatus.UpdatesAvailable) && (
+                {clusterIsUpToDateOrUpdateAvailable(status) && (
                   <>
                     <UpdatesGraph cv={cv} />
                     {workerMachineConfigPool && (
@@ -987,7 +1119,7 @@ export const ClusterVersionDetailsTable: React.FC<ClusterVersionDetailsTableProp
                           divided
                           hideIfComplete
                           machineConfigPool={workerMachineConfigPool}
-                          name="Worker"
+                          name={NodeTypeNames.Worker}
                           updateStartedTime={updateStartedTime}
                         />
                         {machineConfigPools.length > 2 && (
@@ -1058,7 +1190,7 @@ export const ClusterVersionDetailsTable: React.FC<ClusterVersionDetailsTableProp
               <ResourceLink kind={referenceForModel(ClusterVersionModel)} name={cv.metadata.name} />
             </dd>
             <UpstreamConfigDetailsItem resource={cv} />
-            {autoscalers && (
+            {autoscalers && canUpgrade && (
               <>
                 <dt>{t('public~Cluster autoscaler')}</dt>
                 <dd>
@@ -1188,11 +1320,7 @@ export const ClusterSettingsPage: React.FC<ClusterSettingsPageProps> = ({ match 
       <Helmet>
         <title>{title}</title>
       </Helmet>
-      <div className="co-m-nav-title">
-        <h1 className="co-m-pane__heading" data-test-id="cluster-settings-page-heading">
-          {title}
-        </h1>
-      </div>
+      <PageHeading title={<div data-test-id="cluster-settings-page-heading">{title}</div>} />
       <Firehose resources={resources}>
         <HorizontalNav pages={pages} match={match} resourceKeys={resourceKeys} />
       </Firehose>
@@ -1211,12 +1339,12 @@ type CVStatusMessageProps = {
 
 type CurrentChannelProps = {
   cv: K8sResourceKind;
-  clusterVersionIsEditable: boolean;
+  canUpgrade: boolean;
 };
 
 type CurrentVersionProps = {
   cv: ClusterVersionKind;
-  clusterVersionIsEditable?: boolean;
+  canUpgrade?: boolean;
 };
 
 type ChannelProps = {
@@ -1303,6 +1431,13 @@ type UpdateInProgressProps = {
 
 type ClusterNotUpgradeableAlertProps = {
   cv: ClusterVersionKind;
+};
+
+type ClusterSettingsAlertsProps = {
+  canUpgrade: boolean;
+  cv: ClusterVersionKind;
+  machineConfigPools: MachineConfigPoolKind[];
+  status: ClusterUpdateStatus;
 };
 
 type ClusterVersionDetailsTableProps = {

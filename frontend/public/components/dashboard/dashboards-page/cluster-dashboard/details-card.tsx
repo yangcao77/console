@@ -7,10 +7,11 @@ import {
   getInfrastructurePlatform,
   isSingleNode,
   useFlag,
+  useCanClusterUpgrade,
 } from '@console/shared';
 import { Card, CardBody, CardHeader, CardTitle, CardActions } from '@patternfly/react-core';
 import DetailsBody from '@console/shared/src/components/dashboard/details-card/DetailsBody';
-import DetailItem from '@console/shared/src/components/dashboard/details-card/DetailItem';
+import { OverviewDetailItem } from '@openshift-console/plugin-shared/src';
 import { useTranslation } from 'react-i18next';
 import { WatchK8sResource } from '@console/dynamic-plugin-sdk';
 
@@ -31,7 +32,7 @@ import {
   getOCMLink,
 } from '../../../../module/k8s';
 import { flagPending } from '../../../../reducers/features';
-import { ExternalLink, useAccessReview, LoadingInline } from '../../../utils';
+import { ExternalLink, LoadingInline } from '../../../utils';
 import { Link } from 'react-router-dom';
 import { useK8sWatchResource } from '../../../utils/k8s-watch-hook';
 import { ClusterDashboardContext } from './context';
@@ -40,14 +41,8 @@ const ClusterVersion: React.FC<ClusterVersionProps> = ({ cv }) => {
   const { t } = useTranslation();
   const desiredVersion = getDesiredClusterVersion(cv);
   const lastVersion = getLastCompletedUpdate(cv);
+  const canUpgrade = useCanClusterUpgrade();
   const status = getClusterUpdateStatus(cv);
-  const clusterVersionIsEditable =
-    useAccessReview({
-      group: ClusterVersionModel.apiGroup,
-      resource: ClusterVersionModel.plural,
-      verb: 'patch',
-      name: 'version',
-    }) && window.SERVER_FLAGS.branding !== 'dedicated';
 
   switch (status) {
     case ClusterUpdateStatus.Updating:
@@ -66,7 +61,7 @@ const ClusterVersion: React.FC<ClusterVersionProps> = ({ cv }) => {
       return (
         <>
           <span className="co-select-to-copy">{desiredVersion}</span>
-          {clusterVersionIsEditable && (
+          {canUpgrade && (
             <div>
               <Link to="/settings/cluster?showVersions">
                 <BlueArrowCircleUpIcon className="co-icon-space-r" />
@@ -133,7 +128,9 @@ export const DetailsCard = withDashboardResources(
         <CardHeader>
           <CardTitle>{t('public~Details')}</CardTitle>
           <CardActions className="co-overview-card__actions">
-            <Link to="/settings/cluster/">{t('public~View settings')}</Link>
+            <Link to="/settings/cluster/" data-test="details-card-view-settings">
+              {t('public~View settings')}
+            </Link>
           </CardActions>
         </CardHeader>
         <CardBody>
@@ -143,17 +140,25 @@ export const DetailsCard = withDashboardResources(
             <DetailsBody>
               {openshiftFlag ? (
                 <>
-                  <DetailItem
+                  <OverviewDetailItem
                     title={t('public~Cluster API address')}
                     isLoading={!infrastructureLoaded}
-                    error={!!infrastructureError || (infrastructure && !infrastuctureApiUrl)}
+                    error={
+                      !!infrastructureError || (infrastructure && !infrastuctureApiUrl)
+                        ? t('public~Not available')
+                        : undefined
+                    }
                     valueClassName="co-select-to-copy"
                   >
                     {infrastuctureApiUrl}
-                  </DetailItem>
-                  <DetailItem
+                  </OverviewDetailItem>
+                  <OverviewDetailItem
                     title={t('public~Cluster ID')}
-                    error={!!clusterVersionError || (clusterVersionLoaded && !clusterID)}
+                    error={
+                      !!clusterVersionError || (clusterVersionLoaded && !clusterID)
+                        ? t('public~Not available')
+                        : undefined
+                    }
                     isLoading={!clusterVersionLoaded}
                   >
                     <div className="co-select-to-copy">{clusterID}</div>
@@ -164,58 +169,74 @@ export const DetailsCard = withDashboardResources(
                           href={getOCMLink(clusterID)}
                         />
                       )}
-                  </DetailItem>
-                  <DetailItem
+                  </OverviewDetailItem>
+                  <OverviewDetailItem
                     title={t('public~Provider')}
-                    error={!!infrastructureError || (infrastructure && !infrastructurePlatform)}
+                    error={
+                      !!infrastructureError || (infrastructure && !infrastructurePlatform)
+                        ? t('public~Not available')
+                        : undefined
+                    }
                     isLoading={!infrastructureLoaded}
                     valueClassName="co-select-to-copy"
                   >
                     {infrastructurePlatform}
-                  </DetailItem>
-                  <DetailItem
+                  </OverviewDetailItem>
+                  <OverviewDetailItem
                     title={t('public~OpenShift version')}
-                    error={!!clusterVersionError || (clusterVersionLoaded && !openShiftVersion)}
+                    error={
+                      !!clusterVersionError || (clusterVersionLoaded && !openShiftVersion)
+                        ? t('public~Not available')
+                        : undefined
+                    }
                     isLoading={!clusterVersionLoaded}
                   >
                     <ClusterVersion cv={clusterVersionData} />
-                  </DetailItem>
+                  </OverviewDetailItem>
 
                   <ServiceLevel clusterID={clusterID}>
-                    <DetailItem title={useServiceLevelTitle()} error={false} isLoading={false}>
+                    <OverviewDetailItem title={useServiceLevelTitle()}>
                       {/* Service Level handles loading and error state */}
                       <ServiceLevelText clusterID={clusterID} />
-                    </DetailItem>
+                    </OverviewDetailItem>
                   </ServiceLevel>
 
-                  <DetailItem
+                  <OverviewDetailItem
                     title={t('public~Update channel')}
                     isLoading={!clusterVersionLoaded && !clusterVersionError}
-                    error={!!clusterVersionError || (clusterVersionLoaded && !cvChannel)}
+                    error={
+                      !!clusterVersionError || (clusterVersionLoaded && !cvChannel)
+                        ? t('public~Not available')
+                        : undefined
+                    }
                     valueClassName="co-select-to-copy"
                   >
                     {cvChannel}
-                  </DetailItem>
+                  </OverviewDetailItem>
                   {isSingleNode(infrastructure) && (
-                    <DetailItem
+                    <OverviewDetailItem
                       title={t('public~Control plane high availability')}
                       isLoading={false}
                       valueClassName="co-select-to-copy"
                     >
                       {t('public~No (single master)')}
-                    </DetailItem>
+                    </OverviewDetailItem>
                   )}
                 </>
               ) : (
-                <DetailItem
+                <OverviewDetailItem
                   key="kubernetes"
                   title={t('public~Kubernetes version')}
-                  error={!!k8sVersionError || (k8sVersion && !k8sGitVersion)}
+                  error={
+                    !!k8sVersionError || (k8sVersion && !k8sGitVersion)
+                      ? t('public~Not available')
+                      : undefined
+                  }
                   isLoading={!k8sVersion}
                   valueClassName="co-select-to-copy"
                 >
                   {k8sGitVersion}
-                </DetailItem>
+                </OverviewDetailItem>
               )}
             </DetailsBody>
           )}

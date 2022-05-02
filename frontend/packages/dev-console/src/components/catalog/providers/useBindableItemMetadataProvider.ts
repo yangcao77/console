@@ -5,25 +5,18 @@ import {
   CatalogItemMetadataProviderFunction,
   ExtensionHook,
 } from '@console/dynamic-plugin-sdk';
-import { fetchBindableServices } from '../../topology/bindable-services/fetch-bindable-services-utils';
+import { getGroupVersionKindForModel } from '@console/dynamic-plugin-sdk/src/lib-core';
+import { useK8sWatchResource } from '@console/internal/components/utils/k8s-watch-hook';
+import { BindableServicesModel } from '../../topology/bindable-services/models';
+import { BindableServiceGVK, BindableServicesKind } from '../../topology/bindable-services/types';
 
 const useBindableItemMetadataProvider: ExtensionHook<CatalogItemMetadataProviderFunction> = () => {
-  const [bindableServices, setBindableServices] = React.useState([]);
-  const [loaded, setLoaded] = React.useState(false);
-  const [error, setError] = React.useState(null);
+  const [bindableKindsRes, loaded, error] = useK8sWatchResource<BindableServicesKind>({
+    groupVersionKind: getGroupVersionKindForModel(BindableServicesModel),
+    name: 'bindable-kinds',
+  });
 
-  React.useEffect(() => {
-    fetchBindableServices()
-      .then((resp) => {
-        setBindableServices(resp);
-        setLoaded(true);
-      })
-      .catch((e) => {
-        setBindableServices([]);
-        setLoaded(true);
-        setError(e);
-      });
-  }, []);
+  const bindableServices: BindableServiceGVK[] = bindableKindsRes?.status ?? [];
 
   const [t] = useTranslation();
 
@@ -32,12 +25,6 @@ const useBindableItemMetadataProvider: ExtensionHook<CatalogItemMetadataProvider
     badges: [{ text: t('devconsole~Bindable') }],
     attributes: {
       bindable: t('devconsole~Bindable'),
-    },
-  });
-
-  const notbindableMtadata = React.useRef<ReturnType<CatalogItemMetadataProviderFunction>>({
-    attributes: {
-      bindable: t('devconsole~Not Bindable'),
     },
   });
 
@@ -58,7 +45,7 @@ const useBindableItemMetadataProvider: ExtensionHook<CatalogItemMetadataProvider
       ) {
         return bindableMtadata.current;
       }
-      return notbindableMtadata.current;
+      return null;
     },
     [bindableServices, loaded],
   );

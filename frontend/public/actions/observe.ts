@@ -13,6 +13,7 @@ export enum ActionType {
   DashboardsSetTimespan = 'dashboardsSetTimespan',
   DashboardsVariableOptionsLoaded = 'dashboardsVariableOptionsLoaded',
   QueryBrowserAddQuery = 'queryBrowserAddQuery',
+  QueryBrowserDuplicateQuery = 'queryBrowserDuplicateQuery',
   QueryBrowserDeleteAllQueries = 'queryBrowserDeleteAllQueries',
   QueryBrowserDeleteAllSeries = 'queryBrowserDeleteAllSeries',
   QueryBrowserDeleteQuery = 'queryBrowserDeleteQuery',
@@ -23,6 +24,7 @@ export enum ActionType {
   QueryBrowserSetAllExpanded = 'queryBrowserSetAllExpanded',
   QueryBrowserSetMetrics = 'queryBrowserSetMetrics',
   QueryBrowserSetPollInterval = 'queryBrowserSetPollInterval',
+  QueryBrowserSetTimespan = 'queryBrowserSetTimespan',
   QueryBrowserToggleIsEnabled = 'queryBrowserToggleIsEnabled',
   QueryBrowserToggleSeries = 'queryBrowserToggleSeries',
   SetAlertCount = 'SetAlertCount',
@@ -89,6 +91,9 @@ export const toggleGraphs = () => action(ActionType.ToggleGraphs);
 
 export const queryBrowserAddQuery = () => action(ActionType.QueryBrowserAddQuery);
 
+export const queryBrowserDuplicateQuery = (index: number) =>
+  action(ActionType.QueryBrowserDuplicateQuery, { index });
+
 export const queryBrowserDeleteAllQueries = () => action(ActionType.QueryBrowserDeleteAllQueries);
 
 export const queryBrowserDeleteAllSeries = () => action(ActionType.QueryBrowserDeleteAllSeries);
@@ -120,6 +125,9 @@ export const queryBrowserSetMetrics = (metrics: string[]) =>
 export const queryBrowserSetPollInterval = (pollInterval: number) =>
   action(ActionType.QueryBrowserSetPollInterval, { pollInterval });
 
+export const queryBrowserSetTimespan = (timespan: number) =>
+  action(ActionType.QueryBrowserSetTimespan, { timespan });
+
 export const queryBrowserToggleIsEnabled = (index: number) =>
   action(ActionType.QueryBrowserToggleIsEnabled, { index });
 
@@ -141,6 +149,7 @@ const actions = {
   dashboardsSetTimespan,
   dashboardsVariableOptionsLoaded,
   queryBrowserAddQuery,
+  queryBrowserDuplicateQuery,
   queryBrowserDeleteAllQueries,
   queryBrowserDeleteAllSeries,
   queryBrowserDeleteQuery,
@@ -151,6 +160,7 @@ const actions = {
   queryBrowserSetAllExpanded,
   queryBrowserSetMetrics,
   queryBrowserSetPollInterval,
+  queryBrowserSetTimespan,
   queryBrowserToggleIsEnabled,
   queryBrowserToggleSeries,
   setAlertCount,

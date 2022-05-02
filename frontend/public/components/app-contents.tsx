@@ -269,32 +269,6 @@ const AppContents: React.FC<{}> = () => {
       />
 
       <Route path="/operatorhub" exact component={NamespaceRedirect} />
-      <LazyRoute
-        path="/provisionedservices/all-namespaces"
-        loader={() =>
-          import('./provisioned-services' /* webpackChunkName: "provisionedservices" */).then(
-            (m) => m.ProvisionedServicesPage,
-          )
-        }
-      />
-      <LazyRoute
-        path="/provisionedservices/ns/:ns"
-        loader={() =>
-          import('./provisioned-services' /* webpackChunkName: "provisionedservices" */).then(
-            (m) => m.ProvisionedServicesPage,
-          )
-        }
-      />
-      <Route path="/provisionedservices" component={NamespaceRedirect} />
-
-      <LazyRoute
-        path="/brokermanagement"
-        loader={() =>
-          import('./broker-management' /* webpackChunkName: "brokermanagment" */).then(
-            (m) => m.BrokerManagementPage,
-          )
-        }
-      />
 
       <LazyRoute
         path="/catalog/instantiate-template"
@@ -381,6 +355,26 @@ const AppContents: React.FC<{}> = () => {
         }
       />
       <LazyRoute
+        path="/k8s/ns/:ns/configmaps/~new"
+        exact
+        kind="ConfigMap"
+        loader={() =>
+          import('./configmaps/ConfigMapPage' /* webpackChunkName: "create-configmap-page" */).then(
+            (m) => m.default,
+          )
+        }
+      />
+      <LazyRoute
+        path="/k8s/ns/:ns/configmaps/:name/edit"
+        exact
+        kind="ConfigMap"
+        loader={() =>
+          import('./configmaps/ConfigMapPage' /* webpackChunkName: "edit-configmap-page" */).then(
+            (m) => m.default,
+          )
+        }
+      />
+      <LazyRoute
         path="/k8s/ns/:ns/secrets/:name/edit"
         exact
         kind="Secret"
@@ -409,13 +403,22 @@ const AppContents: React.FC<{}> = () => {
       />
 
       <LazyRoute
-        path="/k8s/ns/:ns/routes/~new/form"
+        path="/k8s/ns/:ns/routes/~new"
         exact
         kind="Route"
         loader={() =>
-          import('./routes/create-route' /* webpackChunkName: "create-route" */).then(
-            (m) => m.CreateRoute,
+          import('./routes/RoutePage' /* webpackChunkName: "create-route" */).then(
+            (m) => m.RoutePage,
           )
+        }
+      />
+
+      <LazyRoute
+        path="/k8s/ns/:ns/routes/:name/edit"
+        exact
+        kind="Route"
+        loader={() =>
+          import('./routes/RoutePage' /* webpackChunkName: "edit-route" */).then((m) => m.RoutePage)
         }
       />
 

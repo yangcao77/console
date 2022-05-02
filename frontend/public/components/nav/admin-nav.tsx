@@ -1,20 +1,16 @@
 import * as React from 'react';
 import { useTranslation } from 'react-i18next';
-// eslint-disable-next-line @typescript-eslint/ban-ts-ignore
-// @ts-ignore
-import { useSelector } from 'react-redux';
 import {
   NavItem as PluginNavItem,
   NavSection as PluginNavSection,
   Separator as PluginNavSeparator,
 } from '@console/dynamic-plugin-sdk/src';
 import { LoadedExtension } from '@console/dynamic-plugin-sdk/src/types';
-import { FLAGS, useActiveNamespace, usePrometheusGate } from '@console/shared';
+import { FLAGS, useFlag, useActiveNamespace, usePrometheusGate } from '@console/shared';
 import { ALL_NAMESPACES_KEY } from '@console/shared/src/constants/common';
 import { formatNamespacedRouteForResource } from '@console/shared/src/utils';
 import { NavItemSeparator, NavList } from '@patternfly/react-core';
 import {
-  ChargebackReportModel,
   GroupModel,
   MachineAutoscalerModel,
   MachineConfigModel,
@@ -27,8 +23,6 @@ import {
   VolumeSnapshotModel,
 } from '../../models';
 import { referenceForModel } from '../../module/k8s';
-import { featureReducerName } from '../../reducers/features';
-import { RootState } from '../../redux';
 import { HrefLink, PluginNavItems, ResourceClusterLink, ResourceNSLink } from './items';
 import { NavSection } from './section';
 
@@ -44,8 +38,6 @@ export const Separator: React.FC<SeparatorProps> = ({ name, id }) => (
 );
 
 const searchStartsWith = ['search'];
-const provisionedServicesStartsWith = ['serviceinstances', 'servicebindings'];
-const brokerManagementStartsWith = ['clusterservicebrokers', 'clusterserviceclasses'];
 const rolesStartsWith = ['roles', 'clusterroles'];
 const rolebindingsStartsWith = ['rolebindings', 'clusterrolebindings'];
 const quotaStartsWith = ['resourcequotas', 'clusterresourcequotas'];
@@ -62,15 +54,12 @@ const clusterSettingsStartsWith = [
   'monitoring/alertmanagerconfig',
   'monitoring/alertmanageryaml',
 ];
-const meteringStartsWith = ['metering.openshift.io'];
 const apiExplorerStartsWith = ['api-explorer', 'api-resource'];
 
 const MonitoringNavSection: React.FC<{}> = () => {
   const { t } = useTranslation();
 
-  const canAccess = useSelector(
-    (state: RootState) => !!state[featureReducerName].get(FLAGS.CAN_GET_NS),
-  );
+  const canAccess = useFlag(FLAGS.CAN_GET_NS);
 
   if (!canAccess || !window.SERVER_FLAGS.prometheusBaseURL) {
     return null;
@@ -275,30 +264,8 @@ const AdminNav: React.FC<AdminNavProps> = ({ pluginNavItems }) => {
         id="pipelines"
         title={t('public~Pipelines')}
         data-quickstart-id="qs-nav-pipelines"
+        data-test="nav-pipelines"
       />
-
-      <NavSection
-        id="servicecatalog"
-        title={t('public~Service Catalog')}
-        required={FLAGS.SERVICE_CATALOG}
-        data-quickstart-id="qs-nav-servicecatalog"
-      >
-        <HrefLink
-          id="provisionedservices"
-          href="/provisionedservices"
-          namespaced
-          name={t('public~Provisioned Services')}
-          activePath="/provisionedservices/"
-          startsWith={provisionedServicesStartsWith}
-        />
-        <HrefLink
-          id="brokermanagement"
-          href="/brokermanagement"
-          name={t('public~Broker Management')}
-          activePath="/brokermanagement/"
-          startsWith={brokerManagementStartsWith}
-        />
-      </NavSection>
 
       <MonitoringNavSection />
 
@@ -420,16 +387,6 @@ const AdminNav: React.FC<AdminNavProps> = ({ pluginNavItems }) => {
           startsWith={quotaStartsWith}
         />
         <ResourceNSLink id="roles" resource="limitranges" name={t('public~LimitRanges')} />
-        <HrefLink
-          id="metering"
-          href={formatNamespacedRouteForResource(
-            referenceForModel(ChargebackReportModel),
-            'openshift-metering',
-          )}
-          name={t('public~Chargeback')}
-          required={[FLAGS.CHARGEBACK, FLAGS.CAN_LIST_CHARGEBACK_REPORTS]}
-          startsWith={meteringStartsWith}
-        />
         <ResourceClusterLink
           id="customresourcedefinitions"
           resource="customresourcedefinitions"

@@ -446,6 +446,16 @@
   {
     "type": "console.page/route",
     "properties": {
+      "exact": false,
+      "path": ["/pac/all-namespaces", "/pac/ns/:ns"],
+      "component": {
+        "$codeRef": "pacComponent.PacPage"
+      }
+    }
+  },
+  {
+    "type": "console.page/route",
+    "properties": {
       "exact": true,
       "perspective": "dev",
       "path": [
@@ -474,6 +484,16 @@
       "path": "/k8s/ns/:ns/tekton.dev~v1beta1~Pipeline/:pipelineName/builder",
       "component": {
         "$codeRef": "pipelinesComponent.PipelineBuilderEditPage"
+      }
+    }
+  },
+  {
+    "type": "console.page/route",
+    "properties": {
+      "exact": true,
+      "path": "/k8s/ns/:ns/pipelinesascode.tekton.dev~v1alpha1~Repository/~new/form",
+      "component": {
+        "$codeRef": "pipelinesComponent.RepositoryFormPage"
       }
     }
   },

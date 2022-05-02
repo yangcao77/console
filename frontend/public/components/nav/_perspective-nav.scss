@@ -7,56 +7,24 @@
     }
   }
   .pf-c-nav__section.no-title {
+    border-bottom: 1px solid var(--pf-global--BackgroundColor--dark-200);
+    padding-bottom: var(--pf-global--spacer--sm);
     --pf-c-nav__section--MarginTop: 0;
     .pf-c-nav__section-title {
       --pf-c-nav__section-title--PaddingBottom: 0;
     }
-  }
-}
-
-.oc-nav-pinned-item.pf-c-nav__item {
-  --pf-c-nav__link--PaddingRight: 0;
-
-  display: flex;
-
-  .pf-c-nav__link {
-    display: block;
-    flex-grow: 1;
-    overflow: hidden;
-    position: relative;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-
-    &:hover, &:focus {
-      --pf-c-nav__section-title--PaddingRight: 30px;
-      .oc-nav-pinned-item__unpin-button {
-        .oc-nav-pinned-item__icon {
-          opacity: 1;
-        }
-      }
+    &:last-child {
+      border: none;
     }
   }
-
-  .oc-nav-pinned-item__unpin-button {
-    background-color: var(--pf-c-nav--m-dark__item--BackgroundColor);
-    color: var(--pf-c-nav__link--after--BorderColor);
-    padding-bottom: 0;
-    padding-top: 0;
-    position: absolute;
-    right: 0;
-
-    .pf-m-current & {
-      background-color: var(--pf-c-nav--m-dark__item--m-current--BackgroundColor);
+  &--dragging {
+    background-color: var(--pf-global--Color--200) !important;
+    .pf-c-nav__link {
+      background-color: var(--pf-global--Color--200) !important;
     }
-
-    .oc-nav-pinned-item__icon {
+    .oc-pinned-resource__unpin-button,
+    .oc-pinned-resource__drag-button {
       opacity: 0;
-    }
-
-    &:hover, &:focus {
-      .oc-nav-pinned-item__icon {
-        opacity: 1;
-      }
     }
   }
 }

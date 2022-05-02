@@ -106,6 +106,7 @@ type jsGlobals struct {
 	QuickStarts                string   `json:"quickStarts"`
 	ProjectAccessClusterRoles  string   `json:"projectAccessClusterRoles"`
 	Clusters                   []string `json:"clusters"`
+	ControlPlaneTopology       string   `json:"controlPlaneTopology"`
 }
 
 type Server struct {
@@ -124,6 +125,7 @@ type Server struct {
 	Branding             string
 	CustomProductName    string
 	CustomLogoFile       string
+	ControlPlaneTopology string
 	StatuspageID         string
 	LoadTestFactor       int
 	InactivityTimeout    int
@@ -169,7 +171,7 @@ func (s *Server) prometheusProxyEnabled() bool {
 }
 
 func (s *Server) alertManagerProxyEnabled() bool {
-	return s.AlertManagerProxyConfig != nil
+	return s.AlertManagerProxyConfig != nil && s.AlertManagerTenancyProxyConfig != nil
 }
 
 func (s *Server) meteringProxyEnabled() bool {
@@ -349,6 +351,9 @@ func (s *Server) HTTPHandler() http.Handler {
 			querySourcePath      = prometheusProxyEndpoint + "/api/v1/query"
 			queryRangeSourcePath = prometheusProxyEndpoint + "/api/v1/query_range"
 			targetsSourcePath    = prometheusProxyEndpoint + "/api/v1/targets"
+			metadataSourcePath   = prometheusProxyEndpoint + "/api/v1/metadata"
+			seriesSourcePath     = prometheusProxyEndpoint + "/api/v1/series"
+			labelsSourcePath     = prometheusProxyEndpoint + "/api/v1/labels"
 			targetAPIPath        = prometheusProxyEndpoint + "/api/"
 
 			tenancyQuerySourcePath      = prometheusTenancyProxyEndpoint + "/api/v1/query"
@@ -384,6 +389,27 @@ func (s *Server) HTTPHandler() http.Handler {
 			})),
 		)
 		handle(targetsSourcePath, http.StripPrefix(
+			proxy.SingleJoiningSlash(s.BaseURL.Path, targetAPIPath),
+			authHandlerWithUser(func(user *auth.User, w http.ResponseWriter, r *http.Request) {
+				r.Header.Set("Authorization", fmt.Sprintf("Bearer %s", user.Token))
+				thanosProxy.ServeHTTP(w, r)
+			})),
+		)
+		handle(metadataSourcePath, http.StripPrefix(
+			proxy.SingleJoiningSlash(s.BaseURL.Path, targetAPIPath),
+			authHandlerWithUser(func(user *auth.User, w http.ResponseWriter, r *http.Request) {
+				r.Header.Set("Authorization", fmt.Sprintf("Bearer %s", user.Token))
+				thanosProxy.ServeHTTP(w, r)
+			})),
+		)
+		handle(seriesSourcePath, http.StripPrefix(
+			proxy.SingleJoiningSlash(s.BaseURL.Path, targetAPIPath),
+			authHandlerWithUser(func(user *auth.User, w http.ResponseWriter, r *http.Request) {
+				r.Header.Set("Authorization", fmt.Sprintf("Bearer %s", user.Token))
+				thanosProxy.ServeHTTP(w, r)
+			})),
+		)
+		handle(labelsSourcePath, http.StripPrefix(
 			proxy.SingleJoiningSlash(s.BaseURL.Path, targetAPIPath),
 			authHandlerWithUser(func(user *auth.User, w http.ResponseWriter, r *http.Request) {
 				r.Header.Set("Authorization", fmt.Sprintf("Bearer %s", user.Token))
@@ -432,7 +458,7 @@ func (s *Server) HTTPHandler() http.Handler {
 			alertManagerTenancyProxyAPIPath = alertManagerTenancyProxyEndpoint + "/api/"
 
 			alertManagerProxy        = proxy.NewProxy(s.AlertManagerProxyConfig)
-			alertManagerTenancyProxy = proxy.NewProxy(s.AlertManagerProxyConfig)
+			alertManagerTenancyProxy = proxy.NewProxy(s.AlertManagerTenancyProxyConfig)
 		)
 
 		handle(alertManagerProxyAPIPath, http.StripPrefix(
@@ -670,6 +696,7 @@ func (s *Server) indexHandler(w http.ResponseWriter, r *http.Request) {
 		KubeAPIServerURL:           s.KubeAPIServerURL,
 		Branding:                   s.Branding,
 		CustomProductName:          s.CustomProductName,
+		ControlPlaneTopology:       s.ControlPlaneTopology,
 		StatuspageID:               s.StatuspageID,
 		InactivityTimeout:          s.InactivityTimeout,
 		DocumentationBaseURL:       s.DocumentationBaseURL.String(),
