@@ -750,8 +750,8 @@
       "id": "topology-tab-section-pipelines-overview",
       "tab": "topology-side-bar-tab-resource",
       "insertBefore": "topology-tab-section-network-overview",
-      "section": {
-        "$codeRef": "topology.getPipelinesSideBarTabSection"
+      "provider": {
+        "$codeRef": "topology.usePipelinesSideBarTabSection"
       }
     },
     "flags": {
@@ -783,6 +783,23 @@
     },
     "flags": {
       "required": ["OPENSHIFT_PIPELINE_AS_CODE"]
+    }
+  },
+  {
+    "type": "console.navigation/section",
+    "properties": {
+      "perspective": "admin",
+      "id": "pipelines",
+      "name": "%pipelines-plugin~Pipelines%",
+      "insertAfter": "builds",
+      "insertBefore": "servicecatalog",
+      "dataAttributes": {
+        "data-quickstart-id": "qs-nav-pipelines",
+        "data-test": "nav-pipelines"
+      }
+    },
+    "flags": {
+      "required": ["OPENSHIFT_PIPELINE"]
     }
   }
 ]

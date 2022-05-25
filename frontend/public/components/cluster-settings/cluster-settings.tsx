@@ -75,7 +75,7 @@ import {
   getOCMLink,
   getReleaseNotesLink,
   getSimilarClusterVersionChannels,
-  getSortedUpdates,
+  getSortedAvailableUpdates,
   isMCPMaster,
   isMCPPaused,
   isMCPWorker,
@@ -126,7 +126,7 @@ import { useFlag } from '@console/shared/src/hooks/flag';
 import { FLAGS } from '@console/shared/src/constants';
 
 import { ServiceLevel, useServiceLevelTitle, ServiceLevelText } from '../utils/service-level';
-import { hasAvailableUpdates } from '../../module/k8s/cluster-settings';
+import { hasAvailableUpdates, hasNotRecommendedUpdates } from '../../module/k8s/cluster-settings';
 
 const cancelUpdate = (cv: ClusterVersionKind) => {
   k8sPatch(ClusterVersionModel, cv, [{ path: '/spec/desiredUpdate', op: 'remove' }]).catch(
@@ -387,12 +387,14 @@ export const UpdateLink: React.FC<CurrentVersionProps> = ({ cv, canUpgrade }) =>
   });
   const status = getClusterUpdateStatus(cv);
   const { t } = useTranslation();
+  const hasNotRecommended = hasNotRecommendedUpdates(cv);
   return canUpgrade &&
-    hasAvailableUpdates(cv) &&
+    (hasAvailableUpdates(cv) || hasNotRecommended) &&
     (status === ClusterUpdateStatus.ErrorRetrieving ||
       status === ClusterUpdateStatus.Failing ||
       status === ClusterUpdateStatus.UpdatesAvailable ||
-      status === ClusterUpdateStatus.Updating) &&
+      status === ClusterUpdateStatus.Updating ||
+      (status === ClusterUpdateStatus.UpToDate && hasNotRecommended)) &&
     workerMachineConfigPoolIsEditable ? (
     <div className="co-cluster-settings__details">
       <Button
@@ -401,7 +403,7 @@ export const UpdateLink: React.FC<CurrentVersionProps> = ({ cv, canUpgrade }) =>
         onClick={() => clusterUpdateModal({ cv })}
         data-test-id="cv-update-button"
       >
-        {t('public~Update')}
+        {t('public~Select a version')}
       </Button>
     </div>
   ) : null;
@@ -727,7 +729,7 @@ const OtherNodes: React.FC<OtherNodesProps> = ({
 };
 
 export const UpdatesGraph: React.FC<UpdatesGraphProps> = ({ cv }) => {
-  const availableUpdates = getSortedUpdates(cv);
+  const availableUpdates = getSortedAvailableUpdates(cv);
   const lastVersion = getLastCompletedUpdate(cv);
   const newestVersion = availableUpdates[0]?.version;
   const secondNewestVersion = availableUpdates[1]?.version;
@@ -815,10 +817,12 @@ const MachineConfigPoolsResource: WatchK8sResource = {
 };
 
 export const ClusterOperatorsLink: React.FC<ClusterOperatorsLinkProps> = ({
+  onCancel,
   children,
   queryString,
 }) => (
   <Link
+    onClick={onCancel}
     to={
       queryString
         ? `/settings/cluster/clusteroperators${queryString}`
@@ -893,7 +897,10 @@ const ClusterServiceVersionResource: WatchK8sResource = {
   kind: referenceForModel(ClusterServiceVersionModel),
 };
 
-export const ClusterNotUpgradeableAlert: React.FC<ClusterNotUpgradeableAlertProps> = ({ cv }) => {
+export const ClusterNotUpgradeableAlert: React.FC<ClusterNotUpgradeableAlertProps> = ({
+  cv,
+  onCancel,
+}) => {
   const [clusterOperators] = useK8sWatchResource<ClusterOperator[]>(ClusterOperatorsResource);
   const [clusterServiceVersions] = useK8sWatchResource<ClusterServiceVersionKind[]>(
     ClusterServiceVersionResource,
@@ -907,7 +914,7 @@ export const ClusterNotUpgradeableAlert: React.FC<ClusterNotUpgradeableAlertProp
   const currentVersion = getLastCompletedUpdate(cv);
   const currentVersionParsed = semver.parse(currentVersion);
   const currentMajorMinorVersion = `${currentVersionParsed?.major}.${currentVersionParsed?.minor}`;
-  const availableUpdates = getSortedUpdates(cv);
+  const availableUpdates = getSortedAvailableUpdates(cv);
   const newerUpdate = getNewerMinorVersionUpdate(currentVersion, availableUpdates);
   const newerUpdateParsed = semver.parse(newerUpdate?.version);
   const nextMajorMinorVersion = `${newerUpdateParsed?.major}.${newerUpdateParsed?.minor}`;
@@ -930,7 +937,10 @@ export const ClusterNotUpgradeableAlert: React.FC<ClusterNotUpgradeableAlertProp
           <Flex>
             {notUpgradeableClusterOperatorsPresent && (
               <FlexItem>
-                <ClusterOperatorsLink queryString="?rowFilter-cluster-operator-status=Cannot+update">
+                <ClusterOperatorsLink
+                  onCancel={onCancel}
+                  queryString="?rowFilter-cluster-operator-status=Cannot+update"
+                >
                   {t('public~View ClusterOperators')}
                 </ClusterOperatorsLink>
               </FlexItem>
@@ -938,7 +948,10 @@ export const ClusterNotUpgradeableAlert: React.FC<ClusterNotUpgradeableAlertProp
             {notUpgradeableCSVsPresent && (
               // TODO:  update link to include filter once installed Operators filters are updated
               <FlexItem>
-                <Link to={`/k8s/ns/all-namespaces/${ClusterServiceVersionModel.plural}`}>
+                <Link
+                  onClick={onCancel}
+                  to={`/k8s/ns/all-namespaces/${ClusterServiceVersionModel.plural}`}
+                >
                   {t('public~View installed Operators')}
                 </Link>
               </FlexItem>
@@ -947,7 +960,11 @@ export const ClusterNotUpgradeableAlert: React.FC<ClusterNotUpgradeableAlertProp
         )
       }
     >
-      <SyncMarkdownView content={clusterUpgradeableFalseCondition.message} inline />
+      <SyncMarkdownView
+        content={clusterUpgradeableFalseCondition.message}
+        inline
+        options={{ simplifiedAutoLink: true }}
+      />
     </Alert>
   );
 };
@@ -1111,6 +1128,17 @@ export const ClusterVersionDetailsTable: React.FC<ClusterVersionDetailsTableProp
                 </div>
                 {clusterIsUpToDateOrUpdateAvailable(status) && (
                   <>
+                    {!hasAvailableUpdates(cv) && hasNotRecommendedUpdates(cv) && (
+                      <Alert
+                        className="pf-u-my-sm"
+                        isInline
+                        isPlain
+                        title={t(
+                          'public~Click "Select a version" to view supported but not recommended versions.',
+                        )}
+                        variant="info"
+                      />
+                    )}
                     <UpdatesGraph cv={cv} />
                     {workerMachineConfigPool && (
                       <UpdatesProgress>
@@ -1220,53 +1248,62 @@ export const ClusterVersionDetailsTable: React.FC<ClusterVersionDetailsTableProp
         {_.isEmpty(history) ? (
           <EmptyBox label={t('public~History')} />
         ) : (
-          <div className="co-table-container">
-            <table className="table">
-              <thead>
-                <tr>
-                  <th>{t('public~Version')}</th>
-                  <th>{t('public~State')}</th>
-                  <th>{t('public~Started')}</th>
-                  <th>{t('public~Completed')}</th>
-                  {releaseNotes && (
-                    <th className="hidden-xs hidden-sm">{t('public~Release notes')}</th>
-                  )}
-                </tr>
-              </thead>
-              <tbody>
-                {_.map(history, (update, i) => (
-                  <tr key={i}>
-                    <td
-                      className="co-break-all co-select-to-copy"
-                      data-test-id="cv-details-table-version"
-                    >
-                      {update.version || '-'}
-                    </td>
-                    <td data-test-id="cv-details-table-state">{update.state || '-'}</td>
-                    <td>
-                      <Timestamp timestamp={update.startedTime} />
-                    </td>
-                    <td>
-                      {update.completionTime ? (
-                        <Timestamp timestamp={update.completionTime} />
-                      ) : (
-                        '-'
-                      )}
-                    </td>
+          <>
+            <TextContent>
+              <Text component={TextVariants.p} className="help-block pf-u-mb-lg">
+                {t(
+                  'public~There is a threshold for rendering update data which may cause gaps in the information below.',
+                )}
+              </Text>
+            </TextContent>
+            <div className="co-table-container">
+              <table className="table">
+                <thead>
+                  <tr>
+                    <th>{t('public~Version')}</th>
+                    <th>{t('public~State')}</th>
+                    <th>{t('public~Started')}</th>
+                    <th>{t('public~Completed')}</th>
                     {releaseNotes && (
-                      <td className="hidden-xs hidden-sm">
-                        {getReleaseNotesLink(update.version) ? (
-                          <ReleaseNotesLink version={update.version} />
+                      <th className="hidden-xs hidden-sm">{t('public~Release notes')}</th>
+                    )}
+                  </tr>
+                </thead>
+                <tbody>
+                  {_.map(history, (update, i) => (
+                    <tr key={i}>
+                      <td
+                        className="co-break-all co-select-to-copy"
+                        data-test-id="cv-details-table-version"
+                      >
+                        {update.version || '-'}
+                      </td>
+                      <td data-test-id="cv-details-table-state">{update.state || '-'}</td>
+                      <td>
+                        <Timestamp timestamp={update.startedTime} />
+                      </td>
+                      <td>
+                        {update.completionTime ? (
+                          <Timestamp timestamp={update.completionTime} />
                         ) : (
                           '-'
                         )}
                       </td>
-                    )}
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                      {releaseNotes && (
+                        <td className="hidden-xs hidden-sm">
+                          {getReleaseNotesLink(update.version) ? (
+                            <ReleaseNotesLink version={update.version} />
+                          ) : (
+                            '-'
+                          )}
+                        </td>
+                      )}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </>
         )}
       </div>
     </>
@@ -1419,6 +1456,7 @@ type OtherNodesProps = {
 
 type ClusterOperatorsLinkProps = {
   children: React.ReactNode;
+  onCancel?: () => void;
   queryString?: string;
 };
 
@@ -1431,6 +1469,7 @@ type UpdateInProgressProps = {
 
 type ClusterNotUpgradeableAlertProps = {
   cv: ClusterVersionKind;
+  onCancel?: () => void;
 };
 
 type ClusterSettingsAlertsProps = {

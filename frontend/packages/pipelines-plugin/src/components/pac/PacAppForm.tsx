@@ -30,13 +30,20 @@ const PacAppForm: React.FC<FormikProps<FormikValues>> = ({
     }
   };
   return (
-    <FlexForm action={PAC_GH_APP_NEW} onSubmit={submitFrom} method="post">
-      <FormBody flexLayout>
+    <FlexForm
+      action={PAC_GH_APP_NEW}
+      onSubmit={submitFrom}
+      method="post"
+      data-test="form-setup-github-app"
+    >
+      <FormBody flexLayout className="co-m-pane__body--no-top-margin">
         <FormSection>
           <FormGroup
             label={t('pipelines-plugin~GitHub application name')}
             isRequired
-            helperText={t('pipelines-plugin~Provide a unique name')}
+            helperText={t(
+              'pipelines-plugin~Provide a unique name for your GitHub app, e.g. "pipelines-ci-clustername"',
+            )}
             fieldId="app-name-field"
           >
             <InputField

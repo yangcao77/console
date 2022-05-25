@@ -34,7 +34,12 @@ console.log('Generating Console plugin documentation');
 renderTemplate('scripts/templates/console-extensions.md.ejs', {
   extensions: getConsoleExtensions()
     // Sort extensions by their `type` value
-    .sort((a, b) => a.type.localeCompare(b.type))
+    .sort((a, b) => {
+      if (a.isDeprecated !== b.isDeprecated) {
+        return a.isDeprecated ? 1 : -1;
+      }
+      return a.type.localeCompare(b.type);
+    })
     // Sort extension properties by their optional modifier
     .map<ExtensionTypeInfo>((e) => ({
       ...e,
@@ -44,6 +49,7 @@ renderTemplate('scripts/templates/console-extensions.md.ejs', {
     })),
   printComments: (docComments: string[]) => printJSDocComments(docComments).replace(/\n/g, '<br/>'),
   escapeTableCell: (value: string) => value.replace(/\|/g, '\\|'),
+  safeHeaderLink: (value: string) => value.replace(/[./]/g, ''),
 });
 
 type ComponentInfo = {
@@ -76,6 +82,9 @@ const generateDoc = (comment: tsdoc.DocComment) => {
   const summary = renderDocNode(comment.summarySection);
   const exampleBlock = comment.customBlocks.find((block) => block?.blockTag?.tagName === EXAMPLE);
   const example = renderDocNode(exampleBlock?.content);
+  // FIXME: Let tsdoc parser do the work instead of trying to manually parse the name and content.
+  // If the tsdoc is ill-formatted and isn't being parsed correctly, we should fix that in the tsdoc
+  // comment itself rather than create a special case in our parser.
   const parameters = comment.params.blocks.map((param) => {
     let { parameterName } = param;
     let description = renderDocNode(param.content);

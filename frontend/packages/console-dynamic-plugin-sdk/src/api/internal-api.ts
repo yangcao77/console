@@ -13,10 +13,10 @@ import {
   UtilizationBodyProps,
   UtilizationDurationDropdownProps,
   UseUtilizationDuration,
-  UsePrometheusPoll,
   UseActiveNamespace,
   VirtualizedGridProps,
   LazyActionMenuProps,
+  UseDashboardResources,
 } from './internal-types';
 
 export const ActivityItem: React.FC<ActivityItemProps> = require('@console/shared/src/components/dashboard/activity-card/ActivityItem')
@@ -52,8 +52,8 @@ export const LazyActionMenu: React.FC<LazyActionMenuProps> = require('@console/s
 
 export const useUtilizationDuration: UseUtilizationDuration = require('@console/shared/src/hooks/useUtilizationDuration')
   .useUtilizationDuration;
-export const usePrometheusPoll: UsePrometheusPoll = require('@console/internal/components/graphs/prometheus-poll-hook')
-  .usePrometheusPoll;
 export const useActiveNamespace: UseActiveNamespace = require('@console/shared/src/hooks/useActiveNamespace')
   .useActiveNamespace;
 export const ServicesList = require('@console/internal/components/service').ServicesList;
+export const useDashboardResources: UseDashboardResources = require('@console/shared/src/hooks/useDashboardResources')
+  .useDashboardResources;

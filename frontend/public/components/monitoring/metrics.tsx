@@ -33,7 +33,7 @@ import { useTranslation } from 'react-i18next';
 // @ts-ignore
 import { useDispatch, useSelector } from 'react-redux';
 
-import { PrometheusEndpoint } from '@console/dynamic-plugin-sdk/src/api/internal-types';
+import { PrometheusEndpoint } from '@console/dynamic-plugin-sdk/src/api/common-types';
 import { withFallback } from '@console/shared/src/components/error/error-boundary';
 import { RedExclamationCircleIcon, YellowExclamationTriangleIcon } from '@console/shared';
 
@@ -423,19 +423,16 @@ export const QueryTable: React.FC<QueryTableProps> = ({ index, namespace }) => {
     );
   }
 
-  const cellProps = {
-    props: { className: 'query-browser__table-cell' },
-    transforms: [sortable, wrappable],
-  };
+  const transforms = [sortable, wrappable];
 
   const buttonCell = (labels) => ({ title: <SeriesButton index={index} labels={labels} /> });
 
   let columns, rows;
   if (data.resultType === 'scalar') {
-    columns = ['', { title: t('public~Value'), ...cellProps }];
+    columns = ['', { title: t('public~Value'), transforms }];
     rows = [[buttonCell({}), _.get(result, '[1]')]];
   } else if (data.resultType === 'string') {
-    columns = [{ title: t('public~Value'), ...cellProps }];
+    columns = [{ title: t('public~Value'), transforms }];
     rows = [[result?.[1]]];
   } else {
     const allLabelKeys = _.uniq(_.flatMap(result, ({ metric }) => Object.keys(metric))).sort();
@@ -444,9 +441,9 @@ export const QueryTable: React.FC<QueryTableProps> = ({ index, namespace }) => {
       '',
       ...allLabelKeys.map((k) => ({
         title: <span>{k === '__name__' ? t('public~Name') : k}</span>,
-        ...cellProps,
+        transforms,
       })),
-      { title: t('public~Value'), ...cellProps },
+      { title: t('public~Value'), transforms },
     ];
 
     let rowMapper;
@@ -496,18 +493,20 @@ export const QueryTable: React.FC<QueryTableProps> = ({ index, namespace }) => {
   return (
     <>
       <div className="query-browser__table-wrapper">
-        <Table
-          aria-label={t('public~query results table')}
-          cells={columns}
-          gridBreakPoint={TableGridBreakpoint.none}
-          onSort={onSort}
-          rows={tableRows}
-          sortBy={sortBy}
-          variant={TableVariant.compact}
-        >
-          <TableHeader />
-          <TableBody />
-        </Table>
+        <div className="horizontal-scroll">
+          <Table
+            aria-label={t('public~query results table')}
+            cells={columns}
+            gridBreakPoint={TableGridBreakpoint.none}
+            onSort={onSort}
+            rows={tableRows}
+            sortBy={sortBy}
+            variant={TableVariant.compact}
+          >
+            <TableHeader />
+            <TableBody />
+          </Table>
+        </div>
       </div>
       <TablePagination
         itemCount={rows.length}
