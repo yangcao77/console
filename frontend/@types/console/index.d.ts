@@ -35,6 +35,7 @@ declare interface Window {
     prometheusBaseURL: string;
     prometheusTenancyBaseURL: string;
     quickStarts: string;
+    releaseVersion: string;
     requestTokenURL: string;
     inactivityTimeout: number;
     statuspageID: string;
@@ -45,10 +46,12 @@ declare interface Window {
     userSettingsLocation: string;
     addPage: string; // JSON encoded configuration
     consolePlugins: string[]; // Console dynamic plugins enabled on the cluster
+    i18nNamespaces: string[]; // Available i18n namespaces
     quickStarts: string;
     projectAccessClusterRoles: string;
     clusters: string[];
     controlPlaneTopology: string;
+    telemetry: Record<string, string>;
   };
   windowError?: string;
   __REDUX_DEVTOOLS_EXTENSION_COMPOSE__?: Function;

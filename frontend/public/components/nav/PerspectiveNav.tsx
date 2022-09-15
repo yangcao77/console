@@ -1,4 +1,5 @@
 import * as React from 'react';
+import { useTranslation } from 'react-i18next';
 import * as classNames from 'classnames';
 import { NavGroup, NavList } from '@patternfly/react-core';
 import { modelFor } from '@console/internal/module/k8s';
@@ -10,28 +11,29 @@ import {
   isNavItem,
 } from '@console/dynamic-plugin-sdk/src/lib-core';
 import { usePinnedResources } from '@console/shared';
-import { PluginNavItems } from './PluginNavItems';
+import { PluginNavItem } from './PluginNavItem';
 import { useNavExtensionsForPerspective } from './useNavExtensionForPerspective';
-import { getSortedNavItems, isTopLevelNavItem } from './utils';
+import { getSortedNavExtensions, isTopLevelNavItem } from './utils';
 
 import './PerspectiveNav.scss';
 
 const PerspectiveNav: React.FC<{}> = () => {
   const [activePerspective] = useActivePerspective();
-  const allItems = useNavExtensionsForPerspective(activePerspective);
+  const allNavExtensions = useNavExtensionsForPerspective(activePerspective);
   const [pinnedResources, setPinnedResources, pinnedResourcesLoaded] = usePinnedResources();
   const [validPinnedResources, setValidPinnedResources] = React.useState<string[]>([]);
   const [isDragged, setIsDragged] = React.useState(false);
+  const { t } = useTranslation();
 
   React.useEffect(() => {
     const validResources = pinnedResources.filter((res) => !!modelFor(res));
     setValidPinnedResources(validResources);
   }, [setValidPinnedResources, pinnedResources]);
 
-  const orderedNavItems = React.useMemo(() => {
-    const topLevelItems = allItems.filter(isTopLevelNavItem);
-    return getSortedNavItems(topLevelItems);
-  }, [allItems]);
+  const orderedNavExtensions = React.useMemo(() => {
+    const topLevelNavExtensions = allNavExtensions.filter(isTopLevelNavItem);
+    return getSortedNavExtensions(topLevelNavExtensions);
+  }, [allNavExtensions]);
 
   const getPinnedItems = (): React.ReactElement[] =>
     validPinnedResources.map((resource, idx) => (
@@ -50,7 +52,7 @@ const PerspectiveNav: React.FC<{}> = () => {
   const NavGroupWithDnd = withDragDropContext(() => (
     <NavGroup
       title=""
-      aria-label="pinned resources"
+      aria-label={t('public~Pinned resources')}
       className={classNames('no-title', { 'oc-perspective-nav--dragging': isDragged })}
     >
       {getPinnedItems()}
@@ -59,13 +61,15 @@ const PerspectiveNav: React.FC<{}> = () => {
 
   // We have to use NavList if there is at least one extension that will render an <li>, but we
   // can't use NavList if there are no extensions that render an <li>
-  const hasListItem = orderedNavItems.some(
+  const hasListItem = orderedNavExtensions.some(
     (item) => (isNavSection(item) && item.properties.name) || isNavItem(item),
   );
 
   const content = (
     <>
-      <PluginNavItems items={orderedNavItems} />
+      {orderedNavExtensions.map((extension) => (
+        <PluginNavItem key={extension.uid} extension={extension} />
+      ))}
       {pinnedResourcesLoaded && validPinnedResources?.length > 0 ? <NavGroupWithDnd /> : null}
     </>
   );
@@ -74,7 +78,7 @@ const PerspectiveNav: React.FC<{}> = () => {
     <NavList
       className="oc-perspective-nav"
       title=""
-      aria-label="main nav"
+      aria-label={t('public~Main navigation')}
       data-test-id={`${activePerspective}-perspective-nav`}
     >
       {content}

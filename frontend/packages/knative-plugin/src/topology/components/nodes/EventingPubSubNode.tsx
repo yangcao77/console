@@ -9,10 +9,10 @@ import {
   useAnchor,
   WithDragNodeProps,
   AnchorEnd,
-  WithCreateConnectorProps,
   RectAnchor,
 } from '@patternfly/react-topology';
 import { useTranslation } from 'react-i18next';
+import { WithCreateConnectorProps } from '@console/topology/src/behavior';
 import { BaseNode } from '@console/topology/src/components/graph-view/components/nodes';
 import { TYPE_AGGREGATE_EDGE } from '@console/topology/src/const';
 import { getTopologyResourceObject } from '@console/topology/src/utils';
@@ -40,6 +40,7 @@ const EventingPubSubNode: React.FC<EventingPubSubNodeProps> = ({
   element,
   canDrop,
   dropTarget,
+  children,
   ...rest
 }) => {
   useAnchor(PubSubSourceAnchor, AnchorEnd.source);
@@ -78,7 +79,9 @@ const EventingPubSubNode: React.FC<EventingPubSubNodeProps> = ({
           width={width * 0.8}
           height={width * 0.5}
           xlinkHref={eventPubSubImg}
+          className="odc-eventing-pubsub--image"
         />
+        {children}
       </BaseNode>
     </Tooltip>
   );

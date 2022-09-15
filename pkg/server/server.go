@@ -25,6 +25,7 @@ import (
 	helmhandlerspkg "github.com/openshift/console/pkg/helm/handlers"
 	"github.com/openshift/console/pkg/plugins"
 	"github.com/openshift/console/pkg/proxy"
+	"github.com/openshift/console/pkg/serverconfig"
 	"github.com/openshift/console/pkg/serverutils"
 	"github.com/openshift/console/pkg/terminal"
 	"github.com/openshift/console/pkg/usersettings"
@@ -68,45 +69,48 @@ const (
 )
 
 type jsGlobals struct {
-	ConsoleVersion             string   `json:"consoleVersion"`
-	AuthDisabled               bool     `json:"authDisabled"`
-	KubectlClientID            string   `json:"kubectlClientID"`
-	BasePath                   string   `json:"basePath"`
-	LoginURL                   string   `json:"loginURL"`
-	LoginSuccessURL            string   `json:"loginSuccessURL"`
-	LoginErrorURL              string   `json:"loginErrorURL"`
-	LogoutURL                  string   `json:"logoutURL"`
-	LogoutRedirect             string   `json:"logoutRedirect"`
-	MulticlusterLogoutRedirect string   `json:"multiclusterLogoutRedirect"`
-	RequestTokenURL            string   `json:"requestTokenURL"`
-	KubeAdminLogoutURL         string   `json:"kubeAdminLogoutURL"`
-	KubeAPIServerURL           string   `json:"kubeAPIServerURL"`
-	PrometheusBaseURL          string   `json:"prometheusBaseURL"`
-	PrometheusTenancyBaseURL   string   `json:"prometheusTenancyBaseURL"`
-	AlertManagerBaseURL        string   `json:"alertManagerBaseURL"`
-	MeteringBaseURL            string   `json:"meteringBaseURL"`
-	Branding                   string   `json:"branding"`
-	CustomProductName          string   `json:"customProductName"`
-	CustomLogoURL              string   `json:"customLogoURL"`
-	StatuspageID               string   `json:"statuspageID"`
-	DocumentationBaseURL       string   `json:"documentationBaseURL"`
-	AlertManagerPublicURL      string   `json:"alertManagerPublicURL"`
-	GrafanaPublicURL           string   `json:"grafanaPublicURL"`
-	PrometheusPublicURL        string   `json:"prometheusPublicURL"`
-	ThanosPublicURL            string   `json:"thanosPublicURL"`
-	LoadTestFactor             int      `json:"loadTestFactor"`
-	InactivityTimeout          int      `json:"inactivityTimeout"`
-	GOARCH                     string   `json:"GOARCH"`
-	GOOS                       string   `json:"GOOS"`
-	GraphQLBaseURL             string   `json:"graphqlBaseURL"`
-	DevCatalogCategories       string   `json:"developerCatalogCategories"`
-	UserSettingsLocation       string   `json:"userSettingsLocation"`
-	AddPage                    string   `json:"addPage"`
-	ConsolePlugins             []string `json:"consolePlugins"`
-	QuickStarts                string   `json:"quickStarts"`
-	ProjectAccessClusterRoles  string   `json:"projectAccessClusterRoles"`
-	Clusters                   []string `json:"clusters"`
-	ControlPlaneTopology       string   `json:"controlPlaneTopology"`
+	ConsoleVersion             string                     `json:"consoleVersion"`
+	AuthDisabled               bool                       `json:"authDisabled"`
+	KubectlClientID            string                     `json:"kubectlClientID"`
+	BasePath                   string                     `json:"basePath"`
+	LoginURL                   string                     `json:"loginURL"`
+	LoginSuccessURL            string                     `json:"loginSuccessURL"`
+	LoginErrorURL              string                     `json:"loginErrorURL"`
+	LogoutURL                  string                     `json:"logoutURL"`
+	LogoutRedirect             string                     `json:"logoutRedirect"`
+	MulticlusterLogoutRedirect string                     `json:"multiclusterLogoutRedirect"`
+	RequestTokenURL            string                     `json:"requestTokenURL"`
+	KubeAdminLogoutURL         string                     `json:"kubeAdminLogoutURL"`
+	KubeAPIServerURL           string                     `json:"kubeAPIServerURL"`
+	PrometheusBaseURL          string                     `json:"prometheusBaseURL"`
+	PrometheusTenancyBaseURL   string                     `json:"prometheusTenancyBaseURL"`
+	AlertManagerBaseURL        string                     `json:"alertManagerBaseURL"`
+	MeteringBaseURL            string                     `json:"meteringBaseURL"`
+	Branding                   string                     `json:"branding"`
+	CustomProductName          string                     `json:"customProductName"`
+	CustomLogoURL              string                     `json:"customLogoURL"`
+	StatuspageID               string                     `json:"statuspageID"`
+	DocumentationBaseURL       string                     `json:"documentationBaseURL"`
+	AlertManagerPublicURL      string                     `json:"alertManagerPublicURL"`
+	GrafanaPublicURL           string                     `json:"grafanaPublicURL"`
+	PrometheusPublicURL        string                     `json:"prometheusPublicURL"`
+	ThanosPublicURL            string                     `json:"thanosPublicURL"`
+	LoadTestFactor             int                        `json:"loadTestFactor"`
+	InactivityTimeout          int                        `json:"inactivityTimeout"`
+	GOARCH                     string                     `json:"GOARCH"`
+	GOOS                       string                     `json:"GOOS"`
+	GraphQLBaseURL             string                     `json:"graphqlBaseURL"`
+	DevCatalogCategories       string                     `json:"developerCatalogCategories"`
+	UserSettingsLocation       string                     `json:"userSettingsLocation"`
+	AddPage                    string                     `json:"addPage"`
+	ConsolePlugins             []string                   `json:"consolePlugins"`
+	I18nNamespaces             []string                   `json:"i18nNamespaces"`
+	QuickStarts                string                     `json:"quickStarts"`
+	ProjectAccessClusterRoles  string                     `json:"projectAccessClusterRoles"`
+	Clusters                   []string                   `json:"clusters"`
+	ControlPlaneTopology       string                     `json:"controlPlaneTopology"`
+	Telemetry                  serverconfig.MultiKeyValue `json:"telemetry"`
+	ReleaseVersion             string                     `json:"releaseVersion"`
 }
 
 type Server struct {
@@ -129,8 +133,10 @@ type Server struct {
 	StatuspageID         string
 	LoadTestFactor       int
 	InactivityTimeout    int
+	ReleaseVersion       string
 	// Map that contains list of enabled plugins and their endpoints.
-	EnabledConsolePlugins map[string]string
+	EnabledConsolePlugins serverconfig.MultiKeyValue
+	I18nNamespaces        []string
 	PluginProxy           string
 	// Clients with the correct TLS setup for communicating with the API servers.
 	K8sClients                       map[string]*http.Client
@@ -160,6 +166,7 @@ type Server struct {
 	QuickStarts               string
 	AddPage                   string
 	ProjectAccessClusterRoles string
+	Telemetry                 serverconfig.MultiKeyValue
 }
 
 func (s *Server) authDisabled() bool {
@@ -538,6 +545,10 @@ func (s *Server) HTTPHandler() http.Handler {
 		s.PublicDir,
 	)
 
+	handleFunc(localesEndpoint, func(w http.ResponseWriter, r *http.Request) {
+		pluginsHandler.HandleI18nResources(w, r)
+	})
+
 	handle(pluginAssetsEndpoint, http.StripPrefix(
 		proxy.SingleJoiningSlash(s.BaseURL.Path, pluginAssetsEndpoint),
 		authHandler(func(w http.ResponseWriter, r *http.Request) {
@@ -579,21 +590,6 @@ func (s *Server) HTTPHandler() http.Handler {
 	}
 
 	handle(updatesEndpoint, authHandler(pluginsHandler.HandleCheckUpdates))
-
-	// we need to create another instance of `PluginsHandler` with shorter timeout,
-	// so calls for plugins that doesnt contain locales will fail sooner
-	i18nPluginsHandler := plugins.NewPluginsHandler(
-		&http.Client{
-			Timeout:   10 * time.Second,
-			Transport: &http.Transport{TLSClientConfig: s.PluginsProxyTLSConfig},
-		},
-		s.EnabledConsolePlugins,
-		s.PublicDir,
-	)
-
-	handleFunc(localesEndpoint, func(w http.ResponseWriter, r *http.Request) {
-		i18nPluginsHandler.HandleI18nResources(w, r)
-	})
 
 	// Helm Endpoints
 	metricsHandler := func(next http.Handler) http.Handler {
@@ -711,10 +707,13 @@ func (s *Server) indexHandler(w http.ResponseWriter, r *http.Request) {
 		DevCatalogCategories:       s.DevCatalogCategories,
 		UserSettingsLocation:       s.UserSettingsLocation,
 		ConsolePlugins:             plugins,
+		I18nNamespaces:             s.I18nNamespaces,
 		QuickStarts:                s.QuickStarts,
 		AddPage:                    s.AddPage,
 		ProjectAccessClusterRoles:  s.ProjectAccessClusterRoles,
 		Clusters:                   clusters,
+		Telemetry:                  s.Telemetry,
+		ReleaseVersion:             s.ReleaseVersion,
 	}
 
 	localAuther := s.getLocalAuther()
@@ -860,12 +859,4 @@ func tokenToObjectName(token string) string {
 	name := strings.TrimPrefix(token, sha256Prefix)
 	h := sha256.Sum256([]byte(name))
 	return sha256Prefix + base64.RawURLEncoding.EncodeToString(h[0:])
-}
-
-func getMapKeys(m map[string]string) []string {
-	keys := []string{}
-	for key := range m {
-		keys = append(keys, key)
-	}
-	return keys
 }

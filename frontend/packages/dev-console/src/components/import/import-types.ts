@@ -182,7 +182,7 @@ export interface DockerData {
   dockerfileHasError?: boolean;
 }
 
-type DevfileData = {
+export type DevfileData = {
   devfilePath?: string;
   devfileContent?: string;
   devfileSourceUrl?: string;
@@ -212,8 +212,8 @@ export interface RouteData {
 }
 
 export interface TLSData {
-  termination: string;
-  insecureEdgeTerminationPolicy: string;
+  termination: TerminationType;
+  insecureEdgeTerminationPolicy: InsecureTrafficType | PassthroughInsecureTrafficType;
   certificate: string;
   key: string;
   caCertificate: string;
@@ -265,6 +265,8 @@ export interface ServerlessScaling {
   maxpods: number | '';
   concurrencytarget: number | '';
   concurrencylimit: number | '';
+  defaultConcurrencytarget?: number | '';
+  defaultConcurrencyutilization?: number | '';
   autoscale: AutoscaleWindowType;
   concurrencyutilization: number | '';
 }
@@ -296,6 +298,11 @@ export const ReadableResourcesNames = {
   [Resources.KnativeService]: `devconsole~Serverless Deployment`,
 };
 
+export const ResourcesKinds = {
+  [Resources.OpenShift]: DeploymentConfigModel.kind,
+  [Resources.Kubernetes]: DeploymentModel.kind,
+};
+
 export interface ImportData {
   type: ImportTypes;
   title: string;
@@ -303,33 +310,26 @@ export interface ImportData {
   loader: LazyLoader<GitImportFormProps | SourceToImageFormProps>;
 }
 
-export enum TerminationTypes {
-  // t('devconsole~Edge')
-  edge = 'devconsole~Edge',
-  // t('devconsole~Passthrough')
-  passthrough = 'devconsole~Passthrough',
-  // t('devconsole~Re-encrypt')
-  reencrypt = 'devconsole~Re-encrypt',
+export enum TerminationType {
+  EDGE = 'edge',
+  PASSTHROUGH = 'passthrough',
+  REENCRYPT = 'reencrypt',
 }
 
-export enum InsecureTrafficTypes {
-  // t('devconsole~None')
-  None = 'devconsole~None',
-  // t('devconsole~Allow')
-  Allow = 'devconsole~Allow',
-  // t('devconsole~Redirect')
-  Redirect = 'devconsole~Redirect',
+export enum InsecureTrafficType {
+  None = 'None',
+  Allow = 'Allow',
+  Redirect = 'Redirect',
 }
 
-export enum PassthroughInsecureTrafficTypes {
-  // t('devconsole~None')
-  None = 'devconsole~None',
-  // t('devconsole~Redirect')
-  Redirect = 'devconsole~Redirect',
+export enum PassthroughInsecureTrafficType {
+  None = 'None',
+  Redirect = 'Redirect',
 }
 
 export interface AutoscaleWindowType {
   autoscalewindow: number | '';
+  defaultAutoscalewindow?: number | '';
   autoscalewindowUnit: string;
   defaultAutoscalewindowUnit: string;
 }

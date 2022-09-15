@@ -64,10 +64,10 @@ Then('side bar is displayed with the pipelines section', () => {
   topologySidePane.verifySection('Pipeline Runs');
 });
 
-Then('user can see sidebar Details, Resources and Monitoring tabs', () => {
+Then('user can see sidebar Details, Resources and Observe tabs', () => {
   topologySidePane.verifyTab('Details');
   topologySidePane.verifyTab('Resources');
-  topologySidePane.verifyTab('Monitoring');
+  topologySidePane.verifyTab('Observe');
 });
 
 Then('user can see sidebar Details, Resources tabs', () => {
@@ -150,6 +150,8 @@ When(
 );
 
 Then('user will see workload disappeared from topology', () => {
+  navigateTo(devNavigationMenu.Add);
+  navigateTo(devNavigationMenu.Topology);
   cy.get(topologyPO.emptyStateIcon).should('be.visible');
 });
 

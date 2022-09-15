@@ -5,10 +5,10 @@ import {
   withTargetDrag,
   withSelection,
   withDndDrop,
-  withCreateConnector,
 } from '@patternfly/react-topology';
 import { ViewComponentFactory } from '@console/dynamic-plugin-sdk/src/extensions/topology-types';
 import { contextMenuActions } from '@console/topology/src/actions';
+import { withCreateConnector } from '@console/topology/src/behavior';
 import {
   NodeComponentProps,
   withContextMenu,
@@ -172,7 +172,11 @@ export const getKafkaSinkComponentFactory: ViewComponentFactory = (kind, type) =
   if (type === TYPE_KAFKA_SINK) {
     return withEditReviewAccess('patch')(
       withDragNode(nodeDragSourceSpec(type))(
-        withSelection({ controlled: true })(withContextMenu(contextMenuActions)(EventSink)),
+        withSelection({ controlled: true })(
+          withContextMenu(contextMenuActions)(
+            withDndDrop<any, any, {}, NodeComponentProps>(eventSourceSinkDropTargetSpec)(EventSink),
+          ),
+        ),
       ),
     );
   }

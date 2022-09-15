@@ -1,4 +1,6 @@
+import classNames from 'classnames';
 import * as _ from 'lodash-es';
+import { PrometheusEndpoint, RedExclamationCircleIcon } from '@console/dynamic-plugin-sdk';
 import {
   Button,
   Label,
@@ -20,14 +22,10 @@ import { useTranslation } from 'react-i18next';
 import { useDispatch, useSelector } from 'react-redux';
 import { Map as ImmutableMap } from 'immutable';
 import { Link } from 'react-router-dom';
-import * as classNames from 'classnames';
 
-import { PrometheusEndpoint } from '@console/dynamic-plugin-sdk/src/api/common-types';
-import { RedExclamationCircleIcon } from '@console/shared';
+import { ErrorBoundaryFallbackPage, withFallback } from '@console/shared/src/components/error';
 import ErrorAlert from '@console/shared/src/components/alerts/error';
 import Dashboard from '@console/shared/src/components/dashboard/Dashboard';
-
-import { withFallback } from '@console/shared/src/components/error/error-boundary';
 
 import {
   DashboardsClearVariables,
@@ -39,7 +37,6 @@ import {
   dashboardsVariableOptionsLoaded,
   queryBrowserDeleteAllQueries,
 } from '../../../actions/observe';
-import { ErrorBoundaryFallback } from '../../error';
 import { RootState } from '../../../redux';
 import { getPrometheusURL } from '../../graphs/helpers';
 import {
@@ -67,9 +64,11 @@ import {
 import { useBoolean } from '../hooks/useBoolean';
 import { useIsVisible } from '../hooks/useIsVisible';
 import { useFetchDashboards } from './useFetchDashboards';
-import { getActivePerspective, getAllVariables } from './monitoring-dashboard-utils';
-
-const NUM_SAMPLES = 30;
+import {
+  DEFAULT_GRAPH_SAMPLES,
+  getActivePerspective,
+  getAllVariables,
+} from './monitoring-dashboard-utils';
 
 const intervalVariableRegExps = ['__interval', '__rate_interval', '__auto_interval_[a-z]+'];
 
@@ -96,7 +95,7 @@ const evaluateTemplate = (
   };
 
   // Handle the special "interval" variables
-  const intervalMS = timespan / NUM_SAMPLES;
+  const intervalMS = timespan / DEFAULT_GRAPH_SAMPLES;
   const intervalMinutes = Math.floor(intervalMS / 1000 / 60);
   // Use a minimum of 5m to make sure we have enough data to perform `irate` calculations, which
   // require 2 data points each. Otherwise, there could be gaps in the graph.
@@ -229,7 +228,7 @@ const VariableDropdown: React.FC<VariableDropdownProps> = ({ id, name, namespace
       const url = getPrometheusURL({
         endpoint: PrometheusEndpoint.QUERY_RANGE,
         query: prometheusQuery,
-        samples: NUM_SAMPLES,
+        samples: DEFAULT_GRAPH_SAMPLES,
         timeout: '60s',
         timespan,
         namespace,
@@ -550,12 +549,12 @@ const Card: React.FC<CardProps> = React.memo(({ panel }) => {
 
   const panelClassModifier = getPanelClassModifier(panel);
 
-  const handleZoom = (timeRange: number, endTime: number) => {
+  const handleZoom = React.useCallback((timeRange: number, endTime: number) => {
     setQueryArguments({
       endTime: endTime.toString(),
       timeRange: timeRange.toString(),
     });
-  };
+  }, []);
 
   return (
     <div
@@ -728,7 +727,8 @@ const MonitoringDashboardsPage: React.FC<MonitoringDashboardsPageProps> = ({ mat
         const allVariables = getAllVariables(boards, newBoard, namespace);
         dispatch(dashboardsPatchAllVariables(allVariables, activePerspective));
 
-        // Set time range and poll interval options to their defaults or from the query params if available
+        // Set time range and poll interval options to their defaults or from the query params if
+        // available
         if (refreshInterval) {
           dispatch(dashboardsSetPollInterval(_.toNumber(refreshInterval), activePerspective));
         }
@@ -859,4 +859,4 @@ type MonitoringDashboardsPageProps = {
   };
 };
 
-export default withFallback(MonitoringDashboardsPage, ErrorBoundaryFallback);
+export default withFallback(MonitoringDashboardsPage, ErrorBoundaryFallbackPage);

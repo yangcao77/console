@@ -1,10 +1,8 @@
 import { chart_color_black_400 as skippedColor } from '@patternfly/react-tokens/dist/js/chart_color_black_400';
 import { chart_color_blue_300 as runningColor } from '@patternfly/react-tokens/dist/js/chart_color_blue_300';
 import { chart_color_green_400 as successColor } from '@patternfly/react-tokens/dist/js/chart_color_green_400';
-import { global_BackgroundColor_200 as greyBackgroundColor } from '@patternfly/react-tokens/dist/js/global_BackgroundColor_200';
-import { global_BackgroundColor_light_100 as lightBackgroundColor } from '@patternfly/react-tokens/dist/js/global_BackgroundColor_light_100';
 import { PipelineExampleNames, pipelineTestData } from '../../../../test-data/pipeline-data';
-import { runStatus } from '../../../../utils/pipeline-augment';
+import { ComputedStatus } from '../../../../types';
 import {
   getLastRegularTasks,
   getTopologyNodesEdges,
@@ -150,27 +148,27 @@ describe('hasWhenExpression', () => {
 describe('When expression decorator color', () => {
   it('should return grey color in pipeline details page', () => {
     const { diamondColor, tooltipContent } = getWhenExpressionDiamondState(
-      runStatus.Idle,
+      ComputedStatus.Idle,
       false,
       false,
     );
-    expect(diamondColor).toBe(greyBackgroundColor.value);
+    expect(diamondColor).toBe('var(--pf-global--BackgroundColor--200)');
     expect(tooltipContent).toBe('When expression');
   });
 
   it('should return light-grey color in pipeline details page', () => {
     const { diamondColor, tooltipContent } = getWhenExpressionDiamondState(
-      runStatus.Idle,
+      ComputedStatus.Idle,
       false,
       true,
     );
-    expect(diamondColor).toBe(lightBackgroundColor.value);
+    expect(diamondColor).toBe('var(--pf-global--BackgroundColor--light-100)');
     expect(tooltipContent).toBe('When expression');
   });
 
   it('should return green color for failed task status in pipeline-run details page', () => {
     const { diamondColor, tooltipContent } = getWhenExpressionDiamondState(
-      runStatus.Failed,
+      ComputedStatus.Failed,
       true,
       true,
     );
@@ -180,7 +178,7 @@ describe('When expression decorator color', () => {
 
   it('should return blue color for running task status in pipeline-run details page', () => {
     const { diamondColor, tooltipContent } = getWhenExpressionDiamondState(
-      runStatus.Running,
+      ComputedStatus.Running,
       true,
       true,
     );
@@ -190,7 +188,7 @@ describe('When expression decorator color', () => {
 
   it('should return black color for skipped status in pipeline-run details page', () => {
     const { diamondColor, tooltipContent } = getWhenExpressionDiamondState(
-      runStatus.Skipped,
+      ComputedStatus.Skipped,
       true,
       true,
     );

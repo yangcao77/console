@@ -1,5 +1,4 @@
 import * as React from 'react';
-import { SignOutAltIcon } from '@patternfly/react-icons';
 import {
   Node,
   observer,
@@ -7,11 +6,12 @@ import {
   WithDndDropProps,
   WithContextMenuProps,
   WithDragNodeProps,
-  WithCreateConnectorProps,
   Edge,
 } from '@patternfly/react-topology';
+import { WithCreateConnectorProps } from '@console/topology/src/behavior';
 import { BaseNode } from '@console/topology/src/components/graph-view/components/nodes';
 import { getEventSourceIcon } from '../../../utils/get-knative-icon';
+import { EventSourceIcon } from '../../../utils/icons';
 import { TYPE_KAFKA_CONNECTION_LINK } from '../../const';
 
 import './EventSource.scss';
@@ -26,7 +26,12 @@ export type EventSourceProps = {
   WithContextMenuProps &
   WithCreateConnectorProps;
 
-const EventSource: React.FC<EventSourceProps> = ({ element, onShowCreateConnector, ...rest }) => {
+const EventSource: React.FC<EventSourceProps> = ({
+  element,
+  onShowCreateConnector,
+  children,
+  ...rest
+}) => {
   const { data, resources } = element.getData();
   const { width, height } = element.getBounds();
   const size = Math.min(width, height);
@@ -40,9 +45,15 @@ const EventSource: React.FC<EventSourceProps> = ({ element, onShowCreateConnecto
       onShowCreateConnector={isKafkaConnectionLinkPresent && onShowCreateConnector}
       kind={data.kind}
       element={element}
-      labelIcon={<SignOutAltIcon />}
+      labelIcon={<EventSourceIcon />}
       {...rest}
     >
+      <circle
+        cx={width * 0.5}
+        cy={height * 0.5}
+        r={width * 0.25 + 6}
+        fill="var(--pf-global--palette--white)"
+      />
       {typeof getEventSourceIcon(data.kind, resources.obj) === 'string' ? (
         <image
           x={width * 0.25}
@@ -62,6 +73,7 @@ const EventSource: React.FC<EventSourceProps> = ({ element, onShowCreateConnecto
           {getEventSourceIcon(data.kind, resources.obj, element.getType())}
         </foreignObject>
       )}
+      {children}
     </BaseNode>
   );
 };

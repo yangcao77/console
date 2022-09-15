@@ -123,6 +123,10 @@ func main() {
 	consolePluginsFlags := serverconfig.MultiKeyValue{}
 	fs.Var(&consolePluginsFlags, "plugins", "List of plugin entries that are enabled for the console. Each entry consist of plugin-name as a key and plugin-endpoint as a value.")
 	fPluginProxy := fs.String("plugin-proxy", "", "Defines various service types to which will console proxy plugins requests. (JSON as string)")
+	fI18NamespacesFlags := fs.String("i18n-namespaces", "", "List of namespaces separated by comma. Example --i18n-namespaces=plugin__acm,plugin__kubevirt")
+
+	telemetryFlags := serverconfig.MultiKeyValue{}
+	fs.Var(&telemetryFlags, "telemetry", "Telemetry configuration that can be used by console plugins. Each entry should be a key=value pair.")
 
 	fLoadTestFactor := fs.Int("load-test-factor", 0, "DEV ONLY. The factor used to multiply k8s API list responses for load testing purposes.")
 
@@ -133,6 +137,7 @@ func main() {
 	fProjectAccessClusterRoles := fs.String("project-access-cluster-roles", "", "The list of Cluster Roles assignable for the project access page. (JSON as string)")
 	fManagedClusterConfigs := fs.String("managed-clusters", "", "List of managed cluster configurations. (JSON as string)")
 	fControlPlaneTopology := fs.String("control-plane-topology-mode", "", "Defines the topology mode of the control/infra nodes (External | HighlyAvailable | SingleReplica)")
+	fReleaseVersion := fs.String("release-version", "", "Defines the release version of the cluster")
 
 	if err := serverconfig.Parse(fs, os.Args[1:], "BRIDGE"); err != nil {
 		fmt.Fprintln(os.Stderr, err.Error())
@@ -219,11 +224,19 @@ func main() {
 		klog.Infof("Setting user inactivity timout to %d seconds", *fInactivityTimeout)
 	}
 
-	consolePluginsMap := consolePluginsFlags.ToMap()
-	if len(consolePluginsMap) > 0 {
+	if len(consolePluginsFlags) > 0 {
 		klog.Infoln("The following console plugins are enabled:")
-		for pluginName := range consolePluginsMap {
+		for pluginName := range consolePluginsFlags {
 			klog.Infof(" - %s\n", pluginName)
+		}
+	}
+
+	i18nNamespaces := strings.Split(*fI18NamespacesFlags, ",")
+	if *fI18NamespacesFlags != "" {
+		for _, str := range i18nNamespaces {
+			if str == "" {
+				bridge.FlagFatalf("i18n-namespaces", "list must contain name of i18n namespaces separated by comma")
+			}
 		}
 	}
 
@@ -245,13 +258,16 @@ func main() {
 		InactivityTimeout:         *fInactivityTimeout,
 		DevCatalogCategories:      *fDevCatalogCategories,
 		UserSettingsLocation:      *fUserSettingsLocation,
-		EnabledConsolePlugins:     consolePluginsMap,
+		EnabledConsolePlugins:     consolePluginsFlags,
+		I18nNamespaces:            i18nNamespaces,
 		PluginProxy:               *fPluginProxy,
 		QuickStarts:               *fQuickStarts,
 		AddPage:                   *fAddPage,
 		ProjectAccessClusterRoles: *fProjectAccessClusterRoles,
 		K8sProxyConfigs:           make(map[string]*proxy.Config),
 		K8sClients:                make(map[string]*http.Client),
+		Telemetry:                 telemetryFlags,
+		ReleaseVersion:            *fReleaseVersion,
 	}
 
 	managedClusterConfigs := []serverconfig.ManagedClusterConfig{}

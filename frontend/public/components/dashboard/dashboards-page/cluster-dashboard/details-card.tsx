@@ -1,4 +1,6 @@
 import * as React from 'react';
+import { useTranslation } from 'react-i18next';
+import { Card, CardBody, CardHeader, CardTitle, CardActions } from '@patternfly/react-core';
 import { InProgressIcon } from '@patternfly/react-icons';
 import {
   BlueArrowCircleUpIcon,
@@ -9,20 +11,24 @@ import {
   useFlag,
   useCanClusterUpgrade,
 } from '@console/shared';
+import { ErrorBoundaryInline } from '@console/shared/src/components/error';
 import {
   useResolvedExtensions,
   isOverviewDetailItem,
   WatchK8sResource,
   OverviewDetailItem as OverviewDetailItemType,
 } from '@console/dynamic-plugin-sdk';
-import { Card, CardBody, CardHeader, CardTitle, CardActions } from '@patternfly/react-core';
 import DetailsBody from '@console/shared/src/components/dashboard/details-card/DetailsBody';
 import { OverviewDetailItem } from '@openshift-console/plugin-shared/src';
-import { useTranslation } from 'react-i18next';
 
 import { DashboardItemProps, withDashboardResources } from '../../with-dashboard-resources';
 import { ClusterVersionModel } from '../../../../models';
-import { ServiceLevel, useServiceLevelTitle, ServiceLevelText } from '../../../utils/service-level';
+import {
+  ServiceLevel,
+  useServiceLevelTitle,
+  ServiceLevelText,
+  ServiceLevelLoading,
+} from '../../../utils/service-level';
 import {
   referenceForModel,
   getOpenShiftVersion,
@@ -122,6 +128,7 @@ export const DetailsCard = withDashboardResources(
       };
       fetchK8sVersion();
     }, [openshiftFlag, watchK8sResource, stopWatchK8sResource]);
+    const serviceLevelTitle = useServiceLevelTitle();
 
     const clusterID = getClusterID(clusterVersionData);
     const openShiftVersion = getOpenShiftVersion(clusterVersionData);
@@ -203,8 +210,15 @@ export const DetailsCard = withDashboardResources(
                     <ClusterVersion cv={clusterVersionData} />
                   </OverviewDetailItem>
 
-                  <ServiceLevel clusterID={clusterID}>
-                    <OverviewDetailItem title={useServiceLevelTitle()}>
+                  <ServiceLevel
+                    clusterID={clusterID}
+                    loading={
+                      <OverviewDetailItem title={serviceLevelTitle}>
+                        <ServiceLevelLoading />
+                      </OverviewDetailItem>
+                    }
+                  >
+                    <OverviewDetailItem title={serviceLevelTitle}>
                       {/* Service Level handles loading and error state */}
                       <ServiceLevelText clusterID={clusterID} />
                     </OverviewDetailItem>
@@ -233,7 +247,16 @@ export const DetailsCard = withDashboardResources(
                   )}
                   {detailItemsExtensions.map((e) => {
                     const Component = e.properties.component;
-                    return <Component key={e.uid} />;
+                    return (
+                      <ErrorBoundaryInline
+                        key={e.uid}
+                        wrapper={({ children }) => (
+                          <OverviewDetailItem title="">{children}</OverviewDetailItem>
+                        )}
+                      >
+                        <Component />
+                      </ErrorBoundaryInline>
+                    );
                   })}
                 </>
               ) : (

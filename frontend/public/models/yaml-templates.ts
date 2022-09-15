@@ -379,11 +379,20 @@ metadata:
   labels:
     app: httpd
 spec:
+  securityContext:
+    runAsNonRoot: true
+    seccompProfile:
+      type: RuntimeDefault
   containers:
     - name: httpd
       image: image-registry.openshift-image-registry.svc:5000/openshift/httpd:latest
       ports:
         - containerPort: 8080
+      securityContext:
+        allowPrivilegeEscalation: false
+        capabilities:
+          drop:
+          - ALL
 `,
   )
   .setIn(
@@ -1279,6 +1288,9 @@ apiVersion: policy/v1
 kind: PodDisruptionBudget
 metadata:
   name: ''
+spec:
+  selector:
+    {}
 `,
   )
   .setIn(
@@ -1288,6 +1300,7 @@ apiVersion: policy/v1
 kind: PodDisruptionBudget
 metadata:
   name: example
+  namespace: target-ns
 spec:
  maxUnavailable: 0
  selector:
@@ -1302,6 +1315,7 @@ apiVersion: policy/v1
 kind: PodDisruptionBudget
 metadata:
   name: example
+  namespace: target-ns
 spec:
  minAvailable: "25%"
  selector:

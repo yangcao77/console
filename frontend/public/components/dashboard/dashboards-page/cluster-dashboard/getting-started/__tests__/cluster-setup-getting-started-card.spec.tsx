@@ -71,11 +71,9 @@ describe('ClusterSetupGettingStartedCard', () => {
         href: '/monitoring/alertmanagerconfig',
       },
     ]);
-    expect(wrapper.find(GettingStartedCard).props().moreLink).toEqual({
+    expect(wrapper.find(GettingStartedCard).props().moreLink).toMatchObject({
       id: 'machine-configuration',
       title: 'View all steps in documentation',
-      href:
-        'https://docs.okd.io/latest/post-installation_configuration/post-install-machine-configuration-tasks.html',
       external: true,
     });
   });

@@ -27,3 +27,11 @@ Given(
 Given('user has installed Quay Container Security Operator', () => {
   verifyAndInstallOperator(operators.QuayContainerSecurity);
 });
+
+Given('user has installed Shipwright Operator', () => {
+  verifyAndInstallOperator(operators.ShipwrightOperator);
+});
+
+Given('user with basic rights has installed Web Terminal operator', () => {
+  verifyAndInstallWebTerminalOperator();
+});

@@ -451,7 +451,7 @@
       "href": "/catalog/ns/:namespace?catalogType=EventSource&provider=[\"Red+Hat\"]",
       "label": "%knative-plugin~Event Source%",
       "description": "%knative-plugin~Create an Event source to register interest in a class of events from a particular system%",
-      "icon": { "$codeRef": "icons.eventSourceIcon" }
+      "icon": { "$codeRef": "icons.eventSourceIconSVG" }
     }
   },
   {
@@ -497,7 +497,7 @@
       "href": "/catalog/ns/:namespace?catalogType=EventSink",
       "label": "%knative-plugin~Event Sink%",
       "description": "%knative-plugin~Create an Event sink to receive incoming events from a particular source%",
-      "icon": { "$codeRef": "icons.eventSinkIcon" }
+      "icon": { "$codeRef": "icons.eventSinkIconSVG" }
     }
   },
   {
@@ -570,6 +570,18 @@
     },
     "flags": {
       "required": ["FLAG_CAMEL_KAMELETS"]
+    }
+  },
+  {
+    "type": "console.catalog/item-provider",
+    "properties": {
+      "catalogId": "dev-catalog",
+      "type": "EventSink",
+      "title": "%knative-plugin~Event Sinks%",
+      "provider": { "$codeRef": "catalog.kafkaSinkProvider" }
+    },
+    "flags": {
+      "required": ["FLAG_KAFKA_SINK"]
     }
   },
   {
@@ -1672,7 +1684,7 @@
     "type": "console.topology/data/factory",
     "properties": {
       "id": "knative-kafka-sink-topology-data-factory",
-      "priority": "99",
+      "priority": "500",
       "resources": {
         "kafkasinks": {
           "model": {
@@ -1683,6 +1695,7 @@
           "opts": { "isList": true, "optional": true, "namespaced": true }
         }
       },
+      "workloadKeys": ["kafkasinks"],
       "getDataModel": {
         "$codeRef": "topology.getKafkaSinkKnativeTopologyData"
       }

@@ -17,6 +17,10 @@ import {
   VirtualizedGridProps,
   LazyActionMenuProps,
   UseDashboardResources,
+  UseUserSettings,
+  QuickStartsLoaderProps,
+  UseURLPoll,
+  UseLastNamespace,
 } from './internal-types';
 
 export const ActivityItem: React.FC<ActivityItemProps> = require('@console/shared/src/components/dashboard/activity-card/ActivityItem')
@@ -49,6 +53,8 @@ export const VirtualizedGrid: React.FC<VirtualizedGridProps> = require('@console
   .default;
 export const LazyActionMenu: React.FC<LazyActionMenuProps> = require('@console/shared/src/components/actions/LazyActionMenu')
   .default;
+export const QuickStartsLoader: React.FC<QuickStartsLoaderProps> = require('@console/app/src/components/quick-starts/loader/QuickStartsLoader')
+  .default;
 
 export const useUtilizationDuration: UseUtilizationDuration = require('@console/shared/src/hooks/useUtilizationDuration')
   .useUtilizationDuration;
@@ -57,3 +63,10 @@ export const useActiveNamespace: UseActiveNamespace = require('@console/shared/s
 export const ServicesList = require('@console/internal/components/service').ServicesList;
 export const useDashboardResources: UseDashboardResources = require('@console/shared/src/hooks/useDashboardResources')
   .useDashboardResources;
+export const useUserSettings: UseUserSettings = require('@console/shared/src/hooks/useUserSettings')
+  .useUserSettings;
+export const useURLPoll: UseURLPoll = require('@console/internal/components/utils/url-poll-hook')
+  .useURLPoll;
+export const useLastNamespace: UseLastNamespace = require('@console/app/src/components/detect-namespace/useLastNamespace')
+  .useLastNamespace;
+

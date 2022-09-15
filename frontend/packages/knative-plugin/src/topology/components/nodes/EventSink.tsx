@@ -1,5 +1,5 @@
 import * as React from 'react';
-import { SignInAltIcon } from '@patternfly/react-icons';
+import { Tooltip } from '@patternfly/react-core';
 import {
   Node,
   observer,
@@ -8,21 +8,27 @@ import {
   WithContextMenuProps,
   useCombineRefs,
   WithDragNodeProps,
-  WithCreateConnectorProps,
   Edge,
   useAnchor,
   AnchorEnd,
+  useHover,
+  useVisualizationController,
+  ScaleDetailsLevel,
 } from '@patternfly/react-topology';
+import { useTranslation } from 'react-i18next';
 import { DeploymentModel } from '@console/internal/models';
 import { referenceForModel, referenceFor } from '@console/internal/module/k8s';
 import { usePodsWatcher } from '@console/shared';
+import { WithCreateConnectorProps } from '@console/topology/src/behavior';
 import { PodSet } from '@console/topology/src/components/graph-view';
 import { BaseNode } from '@console/topology/src/components/graph-view/components/nodes';
 import { KafkaSinkModel } from '../../../models';
 import { getEventSourceIcon } from '../../../utils/get-knative-icon';
+import { EventSinkIcon } from '../../../utils/icons';
 import { usePodsForRevisions } from '../../../utils/usePodsForRevisions';
 import { TYPE_EVENT_SINK_LINK, TYPE_KAFKA_CONNECTION_LINK } from '../../const';
 import EventSinkTargetAnchor from '../anchors/EventSinkTargetAnchor';
+import { MOVE_EV_SRC_CONNECTOR_OPERATION } from '../knativeComponentUtils';
 
 import './EventSource.scss';
 
@@ -30,6 +36,10 @@ export type EventSinkProps = {
   element: Node;
   dragging?: boolean;
   edgeDragging?: boolean;
+  tooltipLabel?: string;
+  canDrop?: boolean;
+  dropTarget?: boolean;
+  edgeOperation?: string;
 } & WithSelectionProps &
   WithDragNodeProps &
   WithDndDropProps &
@@ -41,9 +51,17 @@ const EventSink: React.FC<EventSinkProps> = ({
   dragNodeRef,
   dndDropRef,
   onShowCreateConnector,
+  contextMenuOpen,
+  children,
+  tooltipLabel,
+  dropTarget,
+  canDrop,
+  edgeOperation,
   ...rest
 }) => {
   useAnchor(EventSinkTargetAnchor, AnchorEnd.target, TYPE_EVENT_SINK_LINK);
+  const { t } = useTranslation();
+  const [hover, hoverRef] = useHover();
   const groupRefs = useCombineRefs(dragNodeRef, dndDropRef);
   const { data, resources, resource } = element.getData();
   const { width, height } = element.getBounds();
@@ -51,9 +69,15 @@ const EventSink: React.FC<EventSinkProps> = ({
   const isKafkaConnectionLinkPresent =
     element.getSourceEdges()?.filter((edge: Edge) => edge.getType() === TYPE_KAFKA_CONNECTION_LINK)
       .length > 0;
-  const { revisions, associatedDeployment = {} } = resources;
-  const revisionIds = revisions?.map((revision) => revision.metadata.uid);
+  const { revisions, associatedDeployment } = resources;
+  const revisionIds = React.useMemo(() => revisions?.map((revision) => revision.metadata.uid), [
+    revisions,
+  ]);
+
   const { loaded, loadError, pods } = usePodsForRevisions(revisionIds, resource.metadata.namespace);
+  const controller = useVisualizationController();
+  const detailsLevel = controller.getGraph().getDetailsLevel();
+  const showDetails = hover || contextMenuOpen || detailsLevel !== ScaleDetailsLevel.low;
 
   const {
     podData: podsDeployment,
@@ -61,8 +85,8 @@ const EventSink: React.FC<EventSinkProps> = ({
     loaded: loadedDeployment,
   } = usePodsWatcher(
     associatedDeployment,
-    associatedDeployment.kind ?? DeploymentModel.kind,
-    associatedDeployment.metadata?.namespace || resource.metadata?.namespace,
+    associatedDeployment?.kind ?? DeploymentModel.kind,
+    associatedDeployment?.metadata?.namespace || resource.metadata?.namespace,
   );
 
   const isKafkaSink = referenceFor(resource) === referenceForModel(KafkaSinkModel);
@@ -95,38 +119,59 @@ const EventSink: React.FC<EventSinkProps> = ({
   ]);
 
   return (
-    <BaseNode
-      className="odc-event-source"
-      onShowCreateConnector={isKafkaConnectionLinkPresent && onShowCreateConnector}
-      kind={data.kind}
-      element={element}
-      dragNodeRef={groupRefs}
-      labelIcon={<SignInAltIcon />}
-      {...rest}
+    <Tooltip
+      content={
+        edgeOperation === MOVE_EV_SRC_CONNECTOR_OPERATION
+          ? t('knative-plugin~Move sink to KafkaSink')
+          : tooltipLabel ?? ''
+      }
+      trigger="manual"
+      isVisible={dropTarget && canDrop}
+      animationDuration={0}
     >
-      {donutStatus && !isKafkaSink && (
-        <PodSet size={size * 0.75} x={width / 2} y={height / 2} data={donutStatus} />
-      )}
-      {typeof getEventSourceIcon(data.kind, resources.obj) === 'string' ? (
-        <image
-          x={width * 0.33}
-          y={height * 0.33}
-          width={size * 0.35}
-          height={size * 0.35}
-          xlinkHref={getEventSourceIcon(data.kind, resources.obj, element.getType()) as string}
+      <BaseNode
+        className="odc-event-source"
+        onShowCreateConnector={isKafkaConnectionLinkPresent && onShowCreateConnector}
+        kind={data.kind}
+        element={element}
+        hoverRef={hoverRef}
+        dragNodeRef={groupRefs}
+        dropTarget={dropTarget}
+        canDrop={canDrop}
+        labelIcon={<EventSinkIcon />}
+        {...rest}
+      >
+        {donutStatus && showDetails && !isKafkaSink && (
+          <PodSet size={size * 0.75} x={width / 2} y={height / 2} data={donutStatus} />
+        )}
+        <circle
+          cx={width * 0.5}
+          cy={height * 0.5}
+          r={width * 0.25}
+          fill="var(--pf-global--palette--white)"
         />
-      ) : (
-        <foreignObject
-          x={width * 0.33}
-          y={height * 0.33}
-          width={size * 0.35}
-          height={size * 0.35}
-          className="odc-event-source__svg-icon"
-        >
-          {getEventSourceIcon(data.kind, resources.obj, element.getType())}
-        </foreignObject>
-      )}
-    </BaseNode>
+        {typeof getEventSourceIcon(data.kind, resources.obj) === 'string' ? (
+          <image
+            x={width * 0.33}
+            y={height * 0.33}
+            width={size * 0.35}
+            height={size * 0.35}
+            xlinkHref={getEventSourceIcon(data.kind, resources.obj, element.getType()) as string}
+          />
+        ) : (
+          <foreignObject
+            x={width * 0.33}
+            y={height * 0.33}
+            width={size * 0.35}
+            height={size * 0.35}
+            className="odc-event-source__svg-icon"
+          >
+            {getEventSourceIcon(data.kind, resources.obj, element.getType())}
+          </foreignObject>
+        )}
+        {children}
+      </BaseNode>
+    </Tooltip>
   );
 };
 

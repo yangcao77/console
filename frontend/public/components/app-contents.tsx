@@ -11,6 +11,7 @@ import {
 } from '@console/dynamic-plugin-sdk';
 import { useDynamicPluginInfo } from '@console/plugin-sdk/src/api/useDynamicPluginInfo';
 import { FLAGS, useUserSettings, getPerspectiveVisitedKey } from '@console/shared';
+import { ErrorBoundaryPage } from '@console/shared/src/components/error';
 import { connectToFlags } from '../reducers/connectToFlags';
 import { flagPending, FlagsObject } from '../reducers/features';
 import { GlobalNotifications } from './global-notifications';
@@ -19,7 +20,7 @@ import { SearchPage } from './search';
 import { ResourceDetailsPage, ResourceListPage } from './resource-list';
 import { AsyncComponent, LoadingBox } from './utils';
 import { namespacedPrefixes } from './utils/link';
-import { AlertmanagerModel, VolumeSnapshotModel } from '../models';
+import { AlertmanagerModel, CronJobModel, VolumeSnapshotModel } from '../models';
 import { referenceForModel } from '../module/k8s';
 import { NamespaceRedirect } from './utils/namespace-redirect';
 
@@ -290,6 +291,12 @@ const AppContents: React.FC<{}> = () => {
             }`}
           />
         )}
+      />
+
+      <Redirect
+        exact
+        from="/k8s/ns/:ns/batch~v1beta1~CronJob/:name"
+        to={`/k8s/ns/:ns/${CronJobModel.plural}/:name`}
       />
 
       <LazyRoute
@@ -751,7 +758,9 @@ const AppContents: React.FC<{}> = () => {
           className="pf-page__main-section--flex"
           padding={{ default: 'noPadding' }}
         >
-          <React.Suspense fallback={<LoadingBox />}>{contentRouter}</React.Suspense>
+          <ErrorBoundaryPage>
+            <React.Suspense fallback={<LoadingBox />}>{contentRouter}</React.Suspense>
+          </ErrorBoundaryPage>
         </PageSection>
       </div>
     </div>

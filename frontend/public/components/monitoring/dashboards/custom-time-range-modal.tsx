@@ -4,7 +4,6 @@ import { useTranslation } from 'react-i18next';
 // eslint-disable-next-line @typescript-eslint/ban-ts-ignore
 // @ts-ignore
 import { useDispatch, useSelector } from 'react-redux';
-
 import { DatePicker, TimePicker } from '@patternfly/react-core';
 
 import { dashboardsSetEndTime, dashboardsSetTimespan } from '../../../actions/observe';
@@ -60,7 +59,7 @@ const CustomTimeRangeModal = ({ cancel, close, activePerspective }: CustomTimeRa
   };
 
   return (
-    <form onSubmit={submit} name="form" className="modal-content modal-content--no-inner-scroll">
+    <form onSubmit={submit} name="form" className="modal-content">
       <ModalTitle>{t('public~Custom time range')}</ModalTitle>
       <ModalBody>
         <div className="row co-m-form-row">

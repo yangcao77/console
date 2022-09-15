@@ -10,7 +10,13 @@ import { Link } from 'react-router-dom';
 import { Trans, useTranslation } from 'react-i18next';
 import { useClusterVersion, BlueArrowCircleUpIcon, useCanClusterUpgrade } from '@console/shared';
 import { getBrandingDetails } from './masthead';
-import { ReleaseNotesLink, ServiceLevel, useServiceLevelTitle, ServiceLevelText } from './utils';
+import {
+  ReleaseNotesLink,
+  ServiceLevel,
+  useServiceLevelTitle,
+  ServiceLevelText,
+  ServiceLevelLoading,
+} from './utils';
 import { k8sVersion } from '../module/status';
 import {
   getClusterID,
@@ -30,6 +36,7 @@ const AboutModalItems: React.FC<AboutModalItemsProps> = ({ closeAboutModal }) =>
   }, [t]);
   const clusterVersion = useClusterVersion();
   const canUpgrade = useCanClusterUpgrade();
+  const serviceLevelTitle = useServiceLevelTitle();
 
   const clusterID = getClusterID(clusterVersion);
   const channel: string = clusterVersion?.spec?.channel;
@@ -87,9 +94,19 @@ const AboutModalItems: React.FC<AboutModalItemsProps> = ({ closeAboutModal }) =>
             {window.SERVER_FLAGS.kubeAPIServerURL}
           </TextListItem>
 
-          <ServiceLevel clusterID={clusterID}>
+          <ServiceLevel
+            clusterID={clusterID}
+            loading={
+              <>
+                <TextListItem component="dt">{serviceLevelTitle}</TextListItem>
+                <TextListItem component="dd">
+                  <ServiceLevelLoading />
+                </TextListItem>
+              </>
+            }
+          >
             <>
-              <TextListItem component="dt">{useServiceLevelTitle()}</TextListItem>
+              <TextListItem component="dt">{serviceLevelTitle}</TextListItem>
               <TextListItem component="dd" className="co-select-to-copy">
                 <ServiceLevelText inline clusterID={clusterID} />
               </TextListItem>

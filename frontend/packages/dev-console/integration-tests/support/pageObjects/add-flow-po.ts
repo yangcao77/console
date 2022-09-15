@@ -12,6 +12,7 @@ export const addPagePO = {
   buildWithGuidedDocumentation: '[data-test="card quick-start"]',
   buildWithGuidedDocumentationItems: '[data-test="card quick-start"] [data-test~="item"]',
   viewAllQuickStarts: '[data-test="item all-quick-starts"]',
+  helmChartRepositoriesCard: '[data-test="card helm-chart-repositories"]',
 };
 
 export const gitPO = {
@@ -132,6 +133,13 @@ export const catalogPO = {
     eventSources: '[data-test="tab EventSource"]',
     eventSinks: '[data-test="tab EventSink"]',
   },
+  catalogCategoriesByTitle: {
+    'CI/CD': '[data-test="tab cicd"]',
+    Databases: '[data-test="tab databases"]',
+    Languages: '[data-test="tab languages"]',
+    Middleware: '[data-test="tab middleware"]',
+    Other: '[data-test="tab other"]',
+  },
   cards: {
     mariaDBTemplate: 'a[data-test="Template-MariaDB"] .catalog-tile-pf-title',
     phpCakeTemplate: '[data-test="Template-CakePHP + MySQL"] .catalog-tile-pf-title',
@@ -187,6 +195,9 @@ export const catalogPO = {
       AddHostButton: '#root_ingress_hosts_add-btn',
     },
   },
+  operatorBacked: {
+    name: '#root_metadata_name',
+  },
   s2I: {
     gitRepoUrl: '[data-test-id="git-form-input-url"]',
     builderImageVersion: '#form-dropdown-image-tag-field',
@@ -229,6 +240,7 @@ export const eventSourcePO = {
   yamlView: '#form-radiobutton-editorType-yaml-field',
   formView: '#form-radiobutton-editorType-form-field',
   addButton: 'a[role="button"]',
+  nodeHandler: '[data-test-id="base-node-handler"]',
   apiServerSource: {
     apiServerSourceSection: '[data-test~="ApiServerSource"][data-test~="section"]',
     apiVersion: '[data-test=pairs-list-name]',
@@ -282,7 +294,18 @@ export const eventSourcePO = {
     resourceToggleButton: '[id="form-radiobutton-formData-sinkType-resource-field"]',
     resourceDropDownField: '[id="form-ns-dropdown-formData-sink-key-field"]',
     resourceDropDownItem: '[data-test="dropdown-menu-item-link"]',
+    resourceFilter: '[data-test-id="dropdown-text-filter"]',
     resourceSearch: '[placeholder="Select resource"]',
+  },
+  createSinkBinding: {
+    resourceToggleButton: '[data-test="resource-view-input"]',
+    resourceDropDownField: '[id="form-ns-dropdown-formData-sink-key-field"]',
+    resourceDropDownItem: '[data-test="dropdown-menu-item-link"]',
+    resourceSearchField: '[data-test-id="dropdown-text-filter"]',
+    createButton: '[data-test=confirm-action]',
+    moveSinkButton: '[data-test-action="Move sink"]',
+    eventSourceNode: 'g.odc-event-source',
+    uriNode: 'g.odc-sink-uri',
   },
 };
 
@@ -331,4 +354,17 @@ export const quickSearchAddPO = {
   quickSearchCreateButton: '[data-test="create-quick-search"]',
   viewInDevCatalog: '#devCatalog',
   quickSearchNoResults: '[data-test="quick-search-no-results"]',
+};
+
+export const helmChartRepositoriesPO = {
+  yaml: {
+    yamlSwitcher: '[data-test="yaml-view-input"]',
+    yamlEditor: '[data-test="yaml-editor"]',
+  },
+  formTitle: '[data-test="form-title"]',
+  cancelButton: '[data-test-id="cancel-button"]',
+  name: '#form-input-formData-repoName-field',
+  displayName: '#form-input-formData-repoDisplayName-field',
+  description: '#form-input-formData-repoDescription-field',
+  url: '#form-input-formData-repoUrl-field',
 };

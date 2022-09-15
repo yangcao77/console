@@ -171,6 +171,26 @@ export const operatorsPage = {
         cy.get(operatorsPO.operatorHub.quayContainerSecurity).click();
         break;
       }
+      case 'Shipwright Operator':
+      case operators.ShipwrightOperator: {
+        cy.get(operatorsPO.operatorHub.shipwrightOperator).click();
+        break;
+      }
+      case 'Redis Operator':
+      case operators.RedisOperator: {
+        cy.get(operatorsPO.operatorHub.redisOperatorCard).click();
+        break;
+      }
+      case 'AMQ Streams':
+      case operators.AMQStreams: {
+        cy.get(operatorsPO.operatorHub.amqStreams).click();
+        break;
+      }
+      case 'RHOAS':
+      case operators.RHOAS: {
+        cy.get(operatorsPO.operatorHub.rhoas).click();
+        break;
+      }
       default: {
         throw new Error('operator is not available');
       }

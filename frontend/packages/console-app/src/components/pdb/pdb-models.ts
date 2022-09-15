@@ -1,6 +1,7 @@
 import i18next from 'i18next';
 import * as _ from 'lodash';
 import { Selector, k8sPatch, Patch } from '@console/internal/module/k8s';
+import { safeYAMLToJS } from '@console/shared/src/utils/yaml';
 import { PodDisruptionBudgetModel } from '../../models';
 import { PodDisruptionBudgetKind } from './types';
 
@@ -16,7 +17,10 @@ export const intOrString = (val: string | number): string | number => {
   return isValidInt ? parseInt(val, 10) : val;
 };
 
-export const pdbToK8sResource = (from: FormValues): PodDisruptionBudgetKind => {
+export const pdbToK8sResource = (
+  from: FormValues,
+  existingRes?: PodDisruptionBudgetKind,
+): PodDisruptionBudgetKind => {
   const requirement = from.requirement === 'Requirement' ? null : from.requirement;
 
   const res: PodDisruptionBudgetKind = {
@@ -28,13 +32,20 @@ export const pdbToK8sResource = (from: FormValues): PodDisruptionBudgetKind => {
     },
     spec: {
       selector: {
-        matchLabels: from.selector.matchLabels,
-        matchExpressions: from.selector.matchExpressions,
+        matchLabels: from?.selector?.matchLabels,
+        matchExpressions: from?.selector?.matchExpressions,
       },
     },
   };
+
+  // Remove requirement because only one of maxUnavailable and minAvailable in a single PodDisruptionBudget can be specify
+  const omitRequirementFromExistingRes = _.omit(existingRes, [
+    'spec.minAvailable',
+    'spec.maxUnavailable',
+  ]);
+
   const pdbRes = requirement
-    ? _.merge(res, {
+    ? _.merge({}, omitRequirementFromExistingRes, res, {
         spec: {
           [requirement]:
             from.minAvailable !== ''
@@ -47,7 +58,7 @@ export const pdbToK8sResource = (from: FormValues): PodDisruptionBudgetKind => {
   return pdbRes;
 };
 
-export const formValuesFromK8sResource = (from: PodDisruptionBudgetKind): FormValues => {
+export const initialValuesFromK8sResource = (from: PodDisruptionBudgetKind): FormValues => {
   return {
     name: from?.metadata?.name || '',
     namespace: from?.metadata?.namespace || '',
@@ -87,14 +98,14 @@ export const patchPDB = (
       value: formValues.selector.matchExpressions,
     });
   }
-  if (!_.isNil(existingResource?.spec?.minAvailable) && formValues.minAvailable !== '') {
+  if (formValues.minAvailable !== '') {
     patch.push({
       op: 'add',
       path: '/spec/minAvailable',
       value: intOrString(formValues.minAvailable),
     });
   }
-  if (!_.isNil(existingResource?.spec?.maxUnavailable) && formValues.maxUnavailable !== '') {
+  if (formValues.maxUnavailable !== '') {
     patch.push({
       op: 'add',
       path: '/spec/maxUnavailable',
@@ -130,6 +141,13 @@ export const patchPDB = (
 
   return k8sPatch(PodDisruptionBudgetModel, existingResource, patch);
 };
+
+export const mergeInitialYAMLWithExistingResource = (
+  initialYAML: string,
+  existingResource: PodDisruptionBudgetKind,
+): PodDisruptionBudgetKind =>
+  pdbToK8sResource(initialValuesFromK8sResource(safeYAMLToJS(initialYAML)), existingResource);
+
 export type FormValues = {
   name: string;
   namespace: string;

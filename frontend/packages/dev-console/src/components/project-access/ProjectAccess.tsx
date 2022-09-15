@@ -4,14 +4,13 @@ import * as _ from 'lodash';
 import Helmet from 'react-helmet';
 import { useTranslation, Trans } from 'react-i18next';
 import { Link } from 'react-router-dom';
-import { getActiveNamespace } from '@console/internal/actions/ui';
 import {
+  documentationURLs,
+  ExternalLink,
+  getDocumentationURL,
   history,
   LoadingBox,
-  isUpstream,
-  openshiftHelpBase,
   PageHeading,
-  ExternalLink,
   StatusBox,
 } from '@console/internal/components/utils';
 import { RoleBindingModel, RoleModel } from '@console/internal/models';
@@ -24,7 +23,7 @@ import {
   getRolesWithMultipleSubjects,
 } from './project-access-form-submit-utils';
 import { getUserRoleBindings, Roles } from './project-access-form-utils';
-import { Verb, UserRoleBinding, roleBinding } from './project-access-form-utils-types';
+import { Verb, UserRoleBinding } from './project-access-form-utils-types';
 import { validationSchema } from './project-access-form-validation-utils';
 import ProjectAccessForm from './ProjectAccessForm';
 
@@ -51,13 +50,10 @@ const ProjectAccess: React.FC<ProjectAccessProps> = ({
     Object.keys(roles.data),
   );
 
-  const rbacLink = isUpstream()
-    ? `${openshiftHelpBase}authentication/using-rbac.html`
-    : `${openshiftHelpBase}html/authentication_and_authorization/using-rbac`;
+  const rbacURL = getDocumentationURL(documentationURLs.usingRBAC);
 
   const initialValues = {
     projectAccess: roleBindings.loaded && userRoleBindings,
-    namespace,
   };
 
   const handleSubmit = (values, actions) => {
@@ -81,16 +77,15 @@ const ProjectAccess: React.FC<ProjectAccessProps> = ({
     }
     updateRoles.push(...updateRolesWithMultipleSubjects);
     const roleBindingRequests = [];
-    roleBinding.metadata.namespace = namespace;
 
     if (updateRoles.length > 0) {
-      roleBindingRequests.push(...sendRoleBindingRequest(Verb.Patch, updateRoles, roleBinding));
-    }
-    if (removeRoles.length > 0) {
-      roleBindingRequests.push(...sendRoleBindingRequest(Verb.Remove, removeRoles, roleBinding));
+      roleBindingRequests.push(...sendRoleBindingRequest(Verb.Patch, updateRoles, namespace));
     }
     if (newRoles.length > 0) {
-      roleBindingRequests.push(...sendRoleBindingRequest(Verb.Create, newRoles, roleBinding));
+      roleBindingRequests.push(...sendRoleBindingRequest(Verb.Create, newRoles, namespace));
+    }
+    if (removeRoles.length > 0) {
+      roleBindingRequests.push(...sendRoleBindingRequest(Verb.Remove, removeRoles, namespace));
     }
 
     return Promise.all(roleBindingRequests)
@@ -118,12 +113,10 @@ const ProjectAccess: React.FC<ProjectAccessProps> = ({
           {
             "Project access allows you to add or remove a user's access to the project. More advanced management of role-based access control appear in "
           }
-          <Link to={`/k8s/ns/${getActiveNamespace()}/${RoleModel.plural}`}>Roles</Link> and{' '}
-          <Link to={`/k8s/ns/${getActiveNamespace()}/${RoleBindingModel.plural}`}>
-            Role Bindings
-          </Link>
-          . For more information, see the{' '}
-          <ExternalLink href={rbacLink}>role-based access control documentation</ExternalLink>.
+          <Link to={`/k8s/ns/${namespace}/${RoleModel.plural}`}>Roles</Link> and{' '}
+          <Link to={`/k8s/ns/${namespace}/${RoleBindingModel.plural}`}>Role Bindings</Link>. For
+          more information, see the{' '}
+          <ExternalLink href={rbacURL}>role-based access control documentation</ExternalLink>.
         </Trans>
       </PageHeading>
       {roleBindings.loadError ? (

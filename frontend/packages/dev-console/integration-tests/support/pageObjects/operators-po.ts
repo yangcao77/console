@@ -11,7 +11,8 @@ export const operatorsPO = {
     eventing: `a[href^="/eventing/"]`,
     serving: `a[href^="/serving/"]`,
     administration: '[data-quickstart-id="qs-nav-administration"]',
-    customResourceDefinitions: 'a[href="/k8s/cluster/customresourcedefinitions"]',
+    customResourceDefinitions:
+      'a[data-test="nav"][href$="apiextensions.k8s.io~v1~CustomResourceDefinition"]',
   },
   operatorHub: {
     numOfItems: 'div.co-catalog-page__num-items',
@@ -42,6 +43,11 @@ export const operatorsPO = {
       '[data-test="crunchy-postgres-operator-certified-operators-openshift-marketplace"]',
     quayContainerSecurity:
       '[data-test="container-security-operator-redhat-operators-openshift-marketplace"]',
+    shipwrightOperator:
+      '[data-test="shipwright-operator-community-operators-openshift-marketplace"]',
+    redisOperatorCard: '[data-test="redis-operator-community-operators-openshift-marketplace"]',
+    amqStreams: '[data-test="amq-streams-redhat-operators-openshift-marketplace"]',
+    rhoas: '[data-test="rhoas-operator-community-operators-openshift-marketplace"]',
   },
   subscription: {
     logo: 'h1.co-clusterserviceversion-logo__name__clusterserviceversion',
@@ -55,8 +61,10 @@ export const operatorsPO = {
     noOperatorFoundMessage: 'div.cos-status-box__title',
     knativeServingLink: '[title="knativeservings.operator.knative.dev"]',
     knativeEventingLink: '[title="knativeeventings.operator.knative.dev"]',
+    knativeKafkaLink: '[title="knativekafkas.operator.serverless.openshift.io"]',
     operatorStatus: '[data-test="status-text"]',
     checlusterCRLink: '[title="checlusters.org.eclipse.che"]',
+    shipwrightBuildLink: '[title="shipwrightbuilds.operator.shipwright.io"]',
   },
   sidePane: {
     install: '[data-test-id="operator-install-btn"]',

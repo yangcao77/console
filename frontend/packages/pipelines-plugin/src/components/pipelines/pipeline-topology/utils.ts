@@ -1,11 +1,9 @@
 import { chart_color_green_400 as successColor } from '@patternfly/react-tokens/dist/js/chart_color_green_400';
-import { global_BackgroundColor_200 as greyBackgroundColor } from '@patternfly/react-tokens/dist/js/global_BackgroundColor_200';
-import { global_BackgroundColor_light_100 as lightBackgroundColor } from '@patternfly/react-tokens/dist/js/global_BackgroundColor_light_100';
 import * as dagre from 'dagre';
 import * as _ from 'lodash';
 import i18n from '@console/internal/i18n';
-import { PipelineKind, PipelineRunKind, PipelineTask } from '../../../types';
-import { getRunStatusColor, runStatus } from '../../../utils/pipeline-augment';
+import { ComputedStatus, PipelineKind, PipelineRunKind, PipelineTask } from '../../../types';
+import { getRunStatusColor } from '../../../utils/pipeline-augment';
 import { getPipelineTasks, getFinallyTasksWithStatus } from '../../../utils/pipeline-utils';
 import { CheckTaskErrorMessage } from '../pipeline-builder/types';
 import {
@@ -361,30 +359,30 @@ export const getLayoutData = (layout: PipelineLayout): dagre.GraphLabel => {
 };
 
 export const getWhenExpressionDiamondState = (
-  status: runStatus,
+  status: ComputedStatus,
   isPipelineRun: boolean,
   isFinallyTask: boolean,
 ): DiamondStateType => {
   let diamondColor: string;
   if (isPipelineRun) {
-    if (status === runStatus.Failed) {
+    if (status === ComputedStatus.Failed) {
       diamondColor = successColor.value;
     } else {
       diamondColor = getRunStatusColor(status).pftoken.value;
     }
   } else if (!isFinallyTask) {
-    diamondColor = greyBackgroundColor.value;
+    diamondColor = 'var(--pf-global--BackgroundColor--200)';
   } else {
-    diamondColor = lightBackgroundColor.value;
+    diamondColor = 'var(--pf-global--BackgroundColor--light-100)';
   }
 
   let tooltipContent: string;
   switch (status) {
-    case runStatus.Succeeded:
-    case runStatus.Failed:
+    case ComputedStatus.Succeeded:
+    case ComputedStatus.Failed:
       tooltipContent = i18n.t('pipelines-plugin~When expression was met');
       break;
-    case runStatus.Skipped:
+    case ComputedStatus.Skipped:
       tooltipContent = i18n.t('pipelines-plugin~When expression was not met');
       break;
     default:

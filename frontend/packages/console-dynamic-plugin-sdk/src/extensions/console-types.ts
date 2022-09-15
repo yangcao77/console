@@ -1,15 +1,15 @@
 import * as React from 'react';
 import { ButtonProps } from '@patternfly/react-core';
-import { TableGridBreakpoint, OnSelect, SortByDirection, ICell } from '@patternfly/react-table';
+import { ICell, OnSelect, SortByDirection, TableGridBreakpoint } from '@patternfly/react-table';
 import { RouteComponentProps } from 'react-router';
 import {
   ExtensionK8sGroupKindModel,
   K8sModel,
+  PrometheusEndpoint,
   PrometheusLabels,
   PrometheusValue,
   ResolvedExtension,
   Selector,
-  PrometheusEndpoint,
 } from '../api/common-types';
 import { Extension, ExtensionTypeGuard } from '../types';
 
@@ -166,7 +166,7 @@ export type PrometheusPollProps = {
 
 export type UsePrometheusPoll = (
   props: PrometheusPollProps,
-) => [PrometheusResponse, boolean, unknown];
+) => [PrometheusResponse | undefined, boolean, unknown];
 
 export type WatchK8sResource = {
   /** @deprecated Use groupVersionKind instead. The kind property will be removed in a future release. */
@@ -466,6 +466,14 @@ export type ResourceLinkProps = {
   title?: string;
   dataTest?: string;
   onClick?: () => void;
+  truncate?: boolean;
+};
+
+export type ResourceIconProps = {
+  className?: string;
+  /** @deprecated Use groupVersionKind instead. The kind property will be removed in a future release. */
+  kind?: K8sResourceKindReference;
+  groupVersionKind?: K8sGroupVersionKind;
 };
 
 export type UseK8sModel = (
@@ -609,6 +617,16 @@ export type SelfSubjectAccessReviewKind = {
   };
 };
 
+export type YAMLEditorProps = {
+  value?: string;
+  options?: object;
+  minHeight?: string | number;
+  showShortcuts?: boolean;
+  toolbarLinks?: React.ReactNodeArray;
+  onChange?: (newValue, event) => {};
+  onSave?: () => {};
+};
+
 export type ResourceYAMLEditorProps = {
   initialResource: string | { [key: string]: any };
   header?: string;
@@ -617,4 +635,11 @@ export type ResourceYAMLEditorProps = {
 
 export type ResourceEventStreamProps = {
   resource: K8sResourceCommon;
+};
+
+export type TimestampProps = {
+  timestamp: string | number | Date;
+  simple?: boolean;
+  omitSuffix?: boolean;
+  className?: string;
 };

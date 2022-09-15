@@ -1,3 +1,5 @@
+import * as React from 'react';
+import { QuickStart } from '@patternfly/quickstarts';
 import { Map as ImmutableMap } from 'immutable';
 import {
   FirehoseResult,
@@ -58,6 +60,9 @@ export type HealthItemProps = WithClassNameProps<{
   details?: string;
   state?: HealthState;
   popupTitle?: string;
+  popupClassname?: string;
+  popupBodyContent?: React.ReactNode | ((hide: () => void) => React.ReactNode);
+  popupKeepOnOutsideClick?: boolean;
   noIcon?: boolean;
   icon?: React.ReactNode;
 }>;
@@ -176,6 +181,12 @@ export type Options = {
 
 export type UseActiveNamespace = () => [string, (ns: string) => void];
 
+export type UseLastNamespace = () => [
+  string,
+  React.Dispatch<React.SetStateAction<string>>,
+  boolean,
+];
+
 export type VirtualizedGridProps = {
   items: VirtualizedGridItem[] | VirtualizedGridGroupedItems;
   renderCell: VirtualizedGridRenderCell;
@@ -219,6 +230,7 @@ export type LazyActionMenuProps = {
   variant?: ActionMenuVariant;
   label?: string;
   isDisabled?: boolean;
+  extra?: any;
 };
 
 export type ActionContext = {
@@ -265,3 +277,19 @@ export type UseDashboardResources = ({
   prometheusResults: RequestMap<PrometheusResponse>;
   notificationAlerts: { alerts: Alert[]; loaded: boolean; loadError: Error };
 };
+
+export type UseUserSettings = <T>(
+  key: string,
+  defaultValue?: T,
+  sync?: boolean,
+) => [T, React.Dispatch<React.SetStateAction<T>>, boolean];
+
+export type QuickStartsLoaderProps = {
+  children: (quickStarts: QuickStart[], loaded: boolean) => React.ReactNode;
+};
+
+export type UseURLPoll = <R>(
+  url: string,
+  delay?: number,
+  ...dependencies: any[]
+) => [R, any, boolean];
